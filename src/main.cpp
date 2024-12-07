@@ -450,6 +450,41 @@ void setup()
   preferences.end(); // Fermez la mémoire NVS ici
 }
 //****************************************************************************
+void handleRadioPacket(byte* byteArr, int len) {
+      Serial.printf("RECEIVED [%2d] : ", len);
+      char message[255];
+      message[0] = '\0';
+
+      if (len == 23)
+      { // Check if the length is 23 bytes
+
+        // Extract bytes 16 and 17
+        int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
+        float temperatureValue = decimalValueTemp / 10.0;
+        // Extract bytes 18 and 19
+        int decimalValueCons = byteArr[17] << 8 | byteArr[18];
+        float temperatureconsValue = decimalValueCons / 10.0;
+        // Publish temperature to the "frisquet_temperature" MQTT topic
+        char temperaturePayload[10];
+        snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
+        publishMessage(TEMP_AMBIANTE1_TOPIC, temperaturePayload);
+        // Publish temperature to the "tempconsigne" MQTT topic
+        char tempconsignePayload[10];
+        snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
+        publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
+      }
+      for (int i = 0; i < len; i++)
+      {
+        sprintf(message + strlen(message), "%02X ", byteArr[i]);
+        Serial.printf("%02X ", byteArr[i]);
+      }
+      if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
+      {
+        Serial.println(F("Failed to publish Payload to MQTT"));
+      }
+      Serial.println(F(""));
+      }
+//****************************************************************************
 void loop()
 {
   // DateTime();
@@ -494,43 +529,14 @@ void loop()
     }
     counter++;
 
-    char message[255];
+    
     byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
     int state = radio.receive(byteArr, 0);
     if (state == RADIOLIB_ERR_NONE)
     {
       int len = radio.getPacketLength();
-      Serial.printf("RECEIVED [%2d] : ", len);
-      message[0] = '\0';
+      handleRadioPacket(byteArr, len);
 
-      if (len == 23)
-      { // Check if the length is 23 bytes
-
-        // Extract bytes 16 and 17
-        int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
-        float temperatureValue = decimalValueTemp / 10.0;
-        // Extract bytes 18 and 19
-        int decimalValueCons = byteArr[17] << 8 | byteArr[18];
-        float temperatureconsValue = decimalValueCons / 10.0;
-        // Publish temperature to the "frisquet_temperature" MQTT topic
-        char temperaturePayload[10];
-        snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
-        publishMessage(TEMP_AMBIANTE1_TOPIC, temperaturePayload);
-        // Publish temperature to the "tempconsigne" MQTT topic
-        char tempconsignePayload[10];
-        snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
-        publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
-      }
-      for (int i = 0; i < len; i++)
-      {
-        sprintf(message + strlen(message), "%02X ", byteArr[i]);
-        Serial.printf("%02X ", byteArr[i]);
-      }
-      if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
-      {
-        Serial.println(F("Failed to publish Payload to MQTT"));
-      }
-      Serial.println(F(""));
     }
   }
   client.loop();
