@@ -133,11 +133,10 @@ void updateDisplay()
   if (tempAmbianteChanged || tempExterieureChanged || tempConsigneChanged || modeFrisquetChanged)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1) + " Con: " + byteArrayToHexString(&custom_friCon_id, 1));
-    Heltec.display->drawString(0, 11, "Temp Ambiante: " + tempAmbiante + "°C");
-    Heltec.display->drawString(0, 22, "Temp Exterieure: " + tempExterieure + "°C");
-    Heltec.display->drawString(0, 33, "Temp Consigne: " + tempConsigne + "°C");
-    Heltec.display->drawString(0, 44, "Mode: " + modeFrisquet);
+    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
+    Heltec.display->drawString(0, 11, "SonID: " + byteArrayToHexString(&custom_extSon_id, 1) + " ConID: " + byteArrayToHexString(&custom_friCon_id, 1));
+    Heltec.display->drawString(0, 22, "T° Amb: " + tempAmbiante + "°C " + "T° Ext: " + tempExterieure + "°C");
+    Heltec.display->drawString(0, 33, "T° Con: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
 
     Heltec.display->display();
     tempAmbianteChanged = false;
@@ -148,9 +147,10 @@ void updateDisplay()
   else if (assSonFrisquetChanged || assConFrisquetChanged)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1) + " Con: " + byteArrayToHexString(&custom_friCon_id, 1));
-    Heltec.display->drawString(0, 11, "Ass. sonde en cours: " + assSonFrisquet);
-    Heltec.display->drawString(0, 22, "Ass. connect en cours: " + assConFrisquet);
+    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
+    Heltec.display->drawString(0, 11, "SonID: " + byteArrayToHexString(&custom_extSon_id, 1) + " ConID: " + byteArrayToHexString(&custom_friCon_id, 1));
+    Heltec.display->drawString(0, 22, "Ass. sonde en cours: " + assSonFrisquet);
+    Heltec.display->drawString(0, 33, "Ass. connect en cours: " + assConFrisquet);
 
     Heltec.display->display();
     assSonFrisquetChanged = false;
