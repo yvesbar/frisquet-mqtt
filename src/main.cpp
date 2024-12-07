@@ -8,7 +8,7 @@
 #include <heltec.h>
 #include <Preferences.h>
 #include "image.h"
-#include "config.h"
+#include "conf.h"
 
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
