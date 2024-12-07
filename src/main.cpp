@@ -375,8 +375,8 @@ void txExtSonTemp()
 //****************************************************************************
 void txfriConMsg()
 {
-  // Insérer conMsgNum dans la trame actuelle
-  // Supposons que le 6ème octet (index 5) soit destiné au message number
+  // Insérer conMsgNum et custom_friCon_id dans les trames à envoyer
+
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
   Serial.print(F("Envoi de la trame Con index "));
@@ -545,7 +545,7 @@ void setup()
   // Initialize OLED display
   Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
   Heltec.display->init();
-  Heltec.display->flipScreenVertically();
+  //Heltec.display->flipScreenVertically();
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->clear();
   Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
