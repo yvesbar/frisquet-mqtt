@@ -14,6 +14,8 @@ SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
 unsigned long lastTxExtSonTime = 0;            // Variable dernière transmission sonde
 const unsigned long txExtSonInterval = 600000; // Interval de transmission en millisecondes (10 minutes)
+unsigned long lastConMsgTime = 0;
+const unsigned long conMsgInterval = 600000; // 10 minutes
 String DateTimeRes;
 String tempAmbiante;
 String tempExterieure;
@@ -25,6 +27,7 @@ String eraseNvsFrisquet;
 String byteArrayToHexString(uint8_t *byteArray, int length);
 byte extSonTempBytes[2];
 byte sonMsgNum = 0x01;
+byte conMsgNum = 0x03;
 int counter = 0;
 uint8_t custom_network_id[4];
 uint8_t custom_extSon_id;
@@ -53,7 +56,21 @@ const char *RES_NVS_TOPIC = "homeassistant/switch/frisquet/erasenvs/set";
 uint8_t TempExTx[] = {0x80, 0x20, 0x00, 0x00, 0x01, 0x17, 0x9c, 0x54, 0x00, 0x04, 0xa0, 0x29, 0x00, 0x01, 0x02, 0x00, 0x00}; // envoi température
 byte TxByteArr[10] = {0x80, 0x20, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                           // association Sonde exterieure
 byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
+byte TxByteArrCon1[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
+byte TxByteArrCon2[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
+byte TxByteArrCon3[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
+byte TxByteArrCon4[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+//****************************************************************************
+// Array pour envoyé les trames au connect avec un loop qui espace
+int conMsgIndex = 0;
+int conMsgToSendCount = 0;
 
+byte *conMsgArrays[] = {
+    TxByteArrCon1,
+    TxByteArrCon2,
+    TxByteArrCon3,
+    TxByteArrCon4};
+const int conMsgCount = 4;
 //****************************************************************************
 // Fonction pour publier un message MQTT
 void publishMessage(const char *topic, const char *payload)
@@ -356,6 +373,38 @@ void txExtSonTemp()
   int state = radio.transmit(TempExTx, sizeof(TempExTx));
 }
 //****************************************************************************
+void txfriConMsg()
+{
+  // Insérer conMsgNum dans la trame actuelle
+  // Supposons que le 6ème octet (index 5) soit destiné au message number
+  conMsgArrays[conMsgIndex][3] = conMsgNum;
+  conMsgArrays[conMsgIndex][2] = custom_friCon_id;
+  Serial.print(F("Envoi de la trame Con index "));
+  Serial.println(conMsgIndex);
+
+  int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    Serial.println(F("Transmission Con réussie"));
+  }
+  else
+  {
+    Serial.println(F("Erreur lors de la transmission Con"));
+  }
+
+  // Incrémenter conMsgNum de 4 et gérer le débordement
+  conMsgNum += 4;
+  // Si conMsgNum dépasse 255, le remettre à une valeur valide (par exemple, 3)
+  if (conMsgNum > 0xFF)
+  {
+    conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
+  }
+
+  // Préparer la prochaine trame
+  conMsgIndex++;
+  conMsgToSendCount--;
+}
+//****************************************************************************
 bool associateDevice(
     uint8_t *deviceTxArr, size_t deviceTxArrLen, // Tableau et taille de la payload d'association
     const uint8_t *defaultNetworkId,             // Réseau par défaut
@@ -585,6 +634,29 @@ void loop()
       }
       // Mettre à jour le temps de la dernière transmission
       lastTxExtSonTime = currentTime;
+    }
+    // Vérifier si c'est le moment de démarrer l'envoi des 4 trames
+    if (currentTime - lastConMsgTime >= conMsgInterval)
+    {
+      // Vérifier si custom_friCon_id n'est pas égal à 0 byte
+      if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
+      {
+        // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
+        conMsgIndex = 0;
+        conMsgToSendCount = 4;
+        lastConMsgTime = currentTime; // on remet le timer à zéro
+      }
+      else
+      {
+        Serial.println(F("Id frisquet connect non connue"));
+      }
+      // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
+    }
+
+    // Si on a des trames à envoyer depuis connect
+    if (conMsgToSendCount > 0)
+    {
+      txfriConMsg(); // Appeler la fonction pour transmettre les données
     }
     if (!client.connected())
     {
