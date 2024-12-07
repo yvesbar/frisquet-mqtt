@@ -7,8 +7,6 @@
 #include <ArduinoOTA.h>
 #include <heltec.h>
 #include <Preferences.h>
-#include <NTPClient.h>
-#include <Timezone.h>
 #include "image.h"
 #include "config.h"
 
@@ -35,11 +33,7 @@ float temperatureconsValue;
 float extSonVal;
 WiFiClient espClient;
 PubSubClient client(espClient);
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org");
-TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120}; // Règle pour l'heure d'été
-TimeChangeRule CET = {"CET", Last, Sun, Oct, 3, 60};    // Règle pour l'heure d'hiver
-Timezone timeZone(CEST, CET);
+
 // Drapeaux pour indiquer si les données ont changé
 bool tempAmbianteChanged = false;
 bool tempExterieureChanged = false;
@@ -215,38 +209,6 @@ void callback(char *topic, byte *payload, unsigned int length)
       client.publish("homeassistant/switch/frisquet/erasenvs/state", message);
     }
   }
-}
-//****************************************************************************
-void DateTime()
-{
-  timeClient.update();
-  time_t localTime = timeZone.toLocal(timeClient.getEpochTime());
-  struct tm *timeinfo = localtime(&localTime);
-  int monthDay = timeinfo->tm_mday;
-  int currentMonth = timeinfo->tm_mon + 1;
-  int currentYear = timeinfo->tm_year + 1900;
-  int currentHour = timeinfo->tm_hour;
-  int currentMinute = timeinfo->tm_min;
-  int currentSeconde = timeinfo->tm_sec;
-  char buffer[15];
-
-  String resfinal;
-
-  sprintf(buffer, "%04d", currentYear);
-  resfinal = String(buffer);
-  sprintf(buffer, "%02d", currentMonth);
-  resfinal = resfinal + String(buffer);
-  sprintf(buffer, "%02d", monthDay);
-  resfinal = resfinal + String(buffer) + "-";
-
-  sprintf(buffer, "%02d", currentHour);
-  resfinal = resfinal + String(buffer);
-  sprintf(buffer, "%02d", currentMinute);
-  resfinal = resfinal + String(buffer);
-  sprintf(buffer, "%02d", currentSeconde);
-  resfinal = resfinal + String(buffer);
-
-  DateTimeRes = resfinal;
 }
 //****************************************************************************
 void txConfiguration()
@@ -462,7 +424,6 @@ void setup()
     delay(5000);
     ESP.restart();
   }
-  timeClient.begin(); // Démarre le client NTP
   
   initNvs(); // écrit dans la nvs les bytes nécéssaires
 

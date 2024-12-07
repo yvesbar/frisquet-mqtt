@@ -8,11 +8,11 @@ This Arduino code is designed for a Heltec WiFi LoRa 32 V3. It will automaticall
 Buttons are :
 
 - switch to initiate the association of an emulated external temperature sensor
-- switch to initiate the association of an emulated Frisquet connect box (in the future)
+- switch to initiate the association of an emulated Frisquet connect box (in a future release)
 
 Input select :
 
-- prefilled mode to manage heating mode of the boiler  
+- prefilled mode to manage heating mode of the boiler (in a future release)
 
 Some of this code was found on https://forum.hacf.fr/t/pilotage-chaudiere-frisquet-eco-radio-system-visio/19814/90
  
@@ -79,7 +79,7 @@ If the exterior temperature sensor is correctly bound, you can begin the associa
 4. On HA, go to the device and activate the switch that mentions "ass. sonde."
 5. The boiler should indicate that the exterior sensor is associated, and the "ass. sonde" button should return to off.
 
-That's all; after 10 minutes, Heltec scren should update, you should have the exterior temperature displayed on the boiler screen and on the interior satellite screen.
+That's all; after 10 minutes, Heltec screen should update, you should have the exterior temperature displayed on the boiler screen and on the interior satellite screen.
 
 # Tweak
 After the initial association, the network ID and the exterior sensor ID are written on the first line of the Heltec's screen as well as in the console. Even though this data is normally stored in the ESP's NVS memory, I advise you to save them to avoid starting over in case of a major update that would overwrite this memory.
@@ -87,3 +87,5 @@ After the initial association, the network ID and the exterior sensor ID are wri
 If you already have your network ID, you can put it in the 'config.h' file before flashing your Heltec. It will not change with the exterior sensor association.
 
 If you already have an exterior sensor ID from an older association, you can also put it in the 'config.h' file, but make sure that the exterior temperature is correctly bound to the correct MQTT topic.
+
+If your boiler does not display the 'OK' association message, it's likely that your ESP is too far from your boiler. The Heltec is capable of receiving frames over very long distances, but its frame transmission is not very powerful.
