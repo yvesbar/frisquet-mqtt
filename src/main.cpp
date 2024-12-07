@@ -28,6 +28,7 @@ byte sonMsgNum = 0x01;
 int counter = 0;
 uint8_t custom_network_id[4];
 uint8_t custom_extSon_id;
+uint8_t custom_friCon_id;
 float temperatureValue;
 float temperatureconsValue;
 float extSonVal;
@@ -51,6 +52,8 @@ const char *ASS_CON_TOPIC = "homeassistant/switch/frisquet/assconnect/set";
 const char *RES_NVS_TOPIC = "homeassistant/switch/frisquet/erasenvs/set";
 uint8_t TempExTx[] = {0x80, 0x20, 0x00, 0x00, 0x01, 0x17, 0x9c, 0x54, 0x00, 0x04, 0xa0, 0x29, 0x00, 0x01, 0x02, 0x00, 0x00}; // envoi température
 byte TxByteArr[10] = {0x80, 0x20, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                           // association Sonde exterieure
+byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
+
 //****************************************************************************
 // Fonction pour publier un message MQTT
 void publishMessage(const char *topic, const char *payload)
@@ -71,10 +74,11 @@ void eraseNvs()
 //****************************************************************************
 void initNvs()
 {
-// Démarre l'instance de NVS
+  // Démarre l'instance de NVS
   preferences.begin("net-conf", false); // "customId" est le nom de l'espace de stockage
-  // Déclare l'id de sonde externe
+  // Déclare l'id de sonde externe et du connect
   custom_extSon_id = (extSon_id == 0xFF) ? preferences.getUChar("son_id", 0) : extSon_id;
+  custom_friCon_id = (friCon_id == 0xFF) ? preferences.getUChar("con_id", 0) : friCon_id;
   // Vérifie si la clé "custom_network_id" existe dans NVS
   size_t custom_network_id_size = preferences.getBytes("net_id", custom_network_id, sizeof(custom_network_id));
   // Vérifie si custom_network_id est différent de {0xFF, 0xFF, 0xFF, 0xFF} ou si la clé n'existe pas dans NVS
@@ -112,7 +116,7 @@ void updateDisplay()
   if (tempAmbianteChanged || tempExterieureChanged || tempConsigneChanged || modeFrisquetChanged)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1));
+    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1) + " Con: " + byteArrayToHexString(&custom_friCon_id, 1));
     Heltec.display->drawString(0, 11, "Temp Ambiante: " + tempAmbiante + "°C");
     Heltec.display->drawString(0, 22, "Temp Exterieure: " + tempExterieure + "°C");
     Heltec.display->drawString(0, 33, "Temp Consigne: " + tempConsigne + "°C");
@@ -127,7 +131,7 @@ void updateDisplay()
   else if (assSonFrisquetChanged || assConFrisquetChanged)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1));
+    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Son: " + byteArrayToHexString(&custom_extSon_id, 1) + " Con: " + byteArrayToHexString(&custom_friCon_id, 1));
     Heltec.display->drawString(0, 11, "Ass. sonde en cours: " + assSonFrisquet);
     Heltec.display->drawString(0, 22, "Ass. connect en cours: " + assConFrisquet);
 
@@ -352,15 +356,23 @@ void txExtSonTemp()
   int state = radio.transmit(TempExTx, sizeof(TempExTx));
 }
 //****************************************************************************
-void assExtSonde()
+bool associateDevice(
+    uint8_t *deviceTxArr, size_t deviceTxArrLen, // Tableau et taille de la payload d'association
+    const uint8_t *defaultNetworkId,             // Réseau par défaut
+    const char *idKey,                           // Clé NVS pour stocker l'ID du device (ex: "son_id" ou "con_id")
+    const char *assCommandTopic,                 // Topic MQTT sur lequel on a reçu la demande d'association (ex: ASS_SON_TOPIC)
+    const char *assStateTopic                    // Topic MQTT pour publier l'état OFF après association
+)
 {
-  if (memcmp(custom_network_id, def_Network_id, sizeof(def_Network_id)) != 0)
+  // Vérifier si le réseau est par défaut, sinon le réinitialiser
+  if (memcmp(custom_network_id, defaultNetworkId, sizeof(custom_network_id)) != 0)
   {
     setDefaultNetwork();
     txConfiguration();
   }
-  Serial.print("En attente d'association...");
-  Serial.print("\r");
+
+  Serial.print(F("En attente d'association...\r"));
+
   byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
   int state = radio.receive(byteArr, 0);
   if (state == RADIOLIB_ERR_NONE)
@@ -369,45 +381,98 @@ void assExtSonde()
     Serial.printf("RECEIVED [%2d] : ", len);
     for (int i = 0; i < len; i++)
       Serial.printf("%02X ", byteArr[i]);
-    Serial.println(F(""));
+    Serial.println();
+
+    // Vérifier la longueur attendue (ici 11 comme pour l'extSon) ou adapter selon le device
     if (len == 11)
     {
-      TxByteArr[2] = byteArr[2];
-      TxByteArr[3] = byteArr[3];
-      TxByteArr[4] = byteArr[4] | 0x80; // Ajouter 0x80 au 5eme byte
+      // Adapter le payload à partir du message reçu
+      deviceTxArr[2] = byteArr[2];
+      deviceTxArr[3] = byteArr[3];
+      deviceTxArr[4] = byteArr[4] | 0x80; // Ajouter 0x80 au 5eme byte
+
       delay(100);
-      // envoi de la chaine d'association
-      sendTxByteArr();
-      // Copiez les 4 derniers octets du payload dans custom_network_id
-      for (int i = 0; i < 4; i++)
+      // Envoi de la chaine d'association
+      int txState = radio.transmit(deviceTxArr, deviceTxArrLen);
+      if (txState == RADIOLIB_ERR_NONE)
       {
-        custom_network_id[i] = byteArr[len - 4 + i];
+        // Mise à jour du custom_network_id
+        for (int i = 0; i < 4; i++)
+        {
+          custom_network_id[i] = byteArr[len - 4 + i];
+        }
+
+        preferences.begin("net-conf", false);
+        preferences.putBytes("net_id", custom_network_id, sizeof(custom_network_id));
+        preferences.putUChar(idKey, byteArr[2]); // Stocker l'ID du device
+        uint8_t deviceId = preferences.getUChar(idKey, 0);
+        preferences.end();
+
+        Serial.print(F("Custom Network ID: "));
+        for (int i = 0; i < sizeof(custom_network_id); i++)
+        {
+          Serial.printf("%02X ", custom_network_id[i]);
+        }
+        Serial.println();
+
+        Serial.print(F("Custom Device ID: "));
+        Serial.printf("%02X ", deviceId);
+        Serial.println();
+
+        // Publier sur MQTT pour indiquer que l'association est terminée (mettre l'état OFF)
+        publishMessage(assCommandTopic, "OFF");
+        publishMessage(assStateTopic, "OFF");
+
+        Serial.println(F("Association effectuée !"));
+        txConfiguration();
+        Serial.println(F("Reprise de la boucle initiale"));
+        return true;
       }
-      preferences.begin("net-conf", false);
-      preferences.putBytes("net_id", custom_network_id, sizeof(custom_network_id));
-      preferences.putUChar("son_id", byteArr[2]); // Nouvelle entrée pour le byte 3
-      custom_extSon_id = preferences.getUChar("son_id", 0);
-      // Maintenant, custom_network_id contient les 4 derniers octets du payload et son_id est stocké en NVS
-      Serial.print("Custom Network ID: ");
-      for (int i = 0; i < sizeof(custom_network_id); i++)
+      else
       {
-        Serial.printf("%02X ", custom_network_id[i]);
+        Serial.println(F("Erreur lors de la transmission de la trame d'association"));
+        return false;
       }
-      Serial.println(F(""));
-      Serial.print(F("custom ext Son ID: "));
-      Serial.printf("%02X ", custom_extSon_id);
-      preferences.end(); // Ferme la mémoire NVS
-      publishMessage(ASS_SON_TOPIC, "OFF");
-      publishMessage("homeassistant/switch/frisquet/asssonde/state", "OFF");
-      assSonFrisquet = "OFF";
-      Serial.println(F(""));
-      Serial.print(F("association effectuée !"));
-      Serial.println(F(""));
-      txConfiguration();
-      Serial.print(F("reprise de la boucle initiale"));
-      Serial.println(F(""));
+    }
+    else
+    {
+      Serial.println(F("Taille du message inattendue pour l'association."));
+      return false;
     }
   }
+  else
+  {
+    Serial.println(F("Aucun message reçu ou erreur radio."));
+    return false;
+  }
+}
+//****************************************************************************
+void assExtSon()
+{
+
+  associateDevice(
+      TxByteArr, sizeof(TxByteArr),
+      def_Network_id,
+      "son_id",
+      ASS_SON_TOPIC,
+      "homeassistant/switch/frisquet/asssonde/state");
+
+  // Mettre à jour de la variable sonde
+  assSonFrisquet = "OFF";
+}
+//****************************************************************************
+void assFriCon()
+{
+
+  associateDevice(
+      TxByteArrFriCon, sizeof(TxByteArrFriCon),
+      def_Network_id,
+      "con_id",
+      ASS_CON_TOPIC,
+      "homeassistant/switch/frisquet/assconnect/state");
+
+  // Mettre à jour la variable globale correspondante si vous en avez une.
+  assConFrisquet = "OFF";
 }
 //****************************************************************************
 void initOTA();
@@ -417,6 +482,7 @@ void setup()
   Serial.begin(115200);
   Serial.println(F("Booting"));
   WiFi.mode(WIFI_STA);
+  WiFi.setHostname("ESP32Frisquet");
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
@@ -424,7 +490,7 @@ void setup()
     delay(5000);
     ESP.restart();
   }
-  
+
   initNvs(); // écrit dans la nvs les bytes nécéssaires
 
   // Initialize OLED display
@@ -450,40 +516,41 @@ void setup()
   preferences.end(); // Fermez la mémoire NVS ici
 }
 //****************************************************************************
-void handleRadioPacket(byte* byteArr, int len) {
-      Serial.printf("RECEIVED [%2d] : ", len);
-      char message[255];
-      message[0] = '\0';
+void handleRadioPacket(byte *byteArr, int len)
+{
+  Serial.printf("RECEIVED [%2d] : ", len);
+  char message[255];
+  message[0] = '\0';
 
-      if (len == 23)
-      { // Check if the length is 23 bytes
+  if (len == 23)
+  { // Check if the length is 23 bytes
 
-        // Extract bytes 16 and 17
-        int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
-        float temperatureValue = decimalValueTemp / 10.0;
-        // Extract bytes 18 and 19
-        int decimalValueCons = byteArr[17] << 8 | byteArr[18];
-        float temperatureconsValue = decimalValueCons / 10.0;
-        // Publish temperature to the "frisquet_temperature" MQTT topic
-        char temperaturePayload[10];
-        snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
-        publishMessage(TEMP_AMBIANTE1_TOPIC, temperaturePayload);
-        // Publish temperature to the "tempconsigne" MQTT topic
-        char tempconsignePayload[10];
-        snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
-        publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
-      }
-      for (int i = 0; i < len; i++)
-      {
-        sprintf(message + strlen(message), "%02X ", byteArr[i]);
-        Serial.printf("%02X ", byteArr[i]);
-      }
-      if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
-      {
-        Serial.println(F("Failed to publish Payload to MQTT"));
-      }
-      Serial.println(F(""));
-      }
+    // Extract bytes 16 and 17
+    int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
+    float temperatureValue = decimalValueTemp / 10.0;
+    // Extract bytes 18 and 19
+    int decimalValueCons = byteArr[17] << 8 | byteArr[18];
+    float temperatureconsValue = decimalValueCons / 10.0;
+    // Publish temperature to the "frisquet_temperature" MQTT topic
+    char temperaturePayload[10];
+    snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
+    publishMessage(TEMP_AMBIANTE1_TOPIC, temperaturePayload);
+    // Publish temperature to the "tempconsigne" MQTT topic
+    char tempconsignePayload[10];
+    snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
+    publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
+  }
+  for (int i = 0; i < len; i++)
+  {
+    sprintf(message + strlen(message), "%02X ", byteArr[i]);
+    Serial.printf("%02X ", byteArr[i]);
+  }
+  if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
+  {
+    Serial.println(F("Failed to publish Payload to MQTT"));
+  }
+  Serial.println(F(""));
+}
 //****************************************************************************
 void loop()
 {
@@ -493,9 +560,13 @@ void loop()
     eraseNvs();
     initNvs();
   }
-  if (assSonFrisquet == "ON")
+  else if (assSonFrisquet == "ON")
   {
-    assExtSonde();
+    assExtSon();
+  }
+  else if (assConFrisquet == "ON")
+  {
+    assFriCon();
   }
   else
   {
@@ -529,14 +600,12 @@ void loop()
     }
     counter++;
 
-    
     byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
     int state = radio.receive(byteArr, 0);
     if (state == RADIOLIB_ERR_NONE)
     {
       int len = radio.getPacketLength();
       handleRadioPacket(byteArr, len);
-
     }
   }
   client.loop();
@@ -557,7 +626,7 @@ String byteArrayToHexString(uint8_t *byteArray, int length)
 //************************************************************
 void initOTA()
 {
-  ArduinoOTA.setHostname("ESP32 Frisquetconnect");
+  ArduinoOTA.setHostname("ESP32Frisquet");
   ArduinoOTA.setTimeout(25); // Augmenter le délai d'attente à 25 secondes
   ArduinoOTA
       .onStart([]()
