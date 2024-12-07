@@ -57,7 +57,7 @@ void publishMessage(const char *topic, const char *payload)
 {
   if (!client.publish(topic, payload))
   {
-    Serial.println("Failed to publish message to MQTT");
+    Serial.println(F("Failed to publish message to MQTT"));
   }
 }
 //****************************************************************************
@@ -93,7 +93,7 @@ void sendTxByteArr()
   int state = radio.transmit(TxByteArr, sizeof(TxByteArr));
   if (state == RADIOLIB_ERR_NONE)
   {
-    Serial.println("Transmission réussie");
+    Serial.println(F("Transmission réussie"));
     for (int i = 0; i < sizeof(TxByteArr); i++)
     {
       Serial.printf("%02X ", TxByteArr[i]); // Serial.print(TempExTx[i], HEX);
@@ -103,7 +103,7 @@ void sendTxByteArr()
   }
   else
   {
-    Serial.println("Erreur lors de la transmission");
+    Serial.println(F("Erreur lors de la transmission"));
   }
 }
 //****************************************************************************
@@ -226,16 +226,16 @@ void connectToMqtt()
 {
   while (!client.connected())
   {
-    Serial.println("Connecting to MQTT...");
+    Serial.println(F("Connecting to MQTT..."));
     if (client.connect("ESP32 Frisquet", mqttUsername, mqttPassword))
     {
-      Serial.println("Connected to MQTT");
+      Serial.println(F("Connected to MQTT"));
     }
     else
     {
-      Serial.print("Failed to connect to MQTT, rc=");
-      Serial.print(client.state());
-      Serial.println(" Retrying in 5 seconds...");
+      Serial.print(F("Failed to connect to MQTT, rc="));
+      Serial.print(F(client.state()));
+      Serial.println(F(" Retrying in 5 seconds..."));
       delay(5000);
     }
   }
@@ -369,7 +369,7 @@ void assExtSonde()
     Serial.printf("RECEIVED [%2d] : ", len);
     for (int i = 0; i < len; i++)
       Serial.printf("%02X ", byteArr[i]);
-    Serial.println("");
+    Serial.println(F(""));
     if (len == 11)
     {
       TxByteArr[2] = byteArr[2];
@@ -393,19 +393,19 @@ void assExtSonde()
       {
         Serial.printf("%02X ", custom_network_id[i]);
       }
-      Serial.println("");
-      Serial.print("custom ext Son ID: ");
+      Serial.println(F(""));
+      Serial.print(F("custom ext Son ID: "));
       Serial.printf("%02X ", custom_extSon_id);
       preferences.end(); // Ferme la mémoire NVS
       publishMessage(ASS_SON_TOPIC, "OFF");
       publishMessage("homeassistant/switch/frisquet/asssonde/state", "OFF");
       assSonFrisquet = "OFF";
-      Serial.println("");
-      Serial.print("association effectuée !");
-      Serial.println("");
+      Serial.println(F(""));
+      Serial.print(F("association effectuée !"));
+      Serial.println(F(""));
       txConfiguration();
-      Serial.print("reprise de la boucle initiale");
-      Serial.println("");
+      Serial.print(F("reprise de la boucle initiale"));
+      Serial.println(F(""));
     }
   }
 }
@@ -415,12 +415,12 @@ void initOTA();
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Booting");
+  Serial.println(F("Booting"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
-    Serial.println("Connection Failed! Rebooting...");
+    Serial.println(F("Connection Failed! Rebooting..."));
     delay(5000);
     ESP.restart();
   }
@@ -438,8 +438,8 @@ void setup()
 
   txConfiguration();
   initOTA();
-  Serial.println("Ready");
-  Serial.print("IP address: ");
+  Serial.println(F("Ready"));
+  Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
   // Initialisation de la connexion MQTT
   client.setServer(mqttServer, mqttPort);
@@ -475,7 +475,7 @@ void loop()
       }
       else
       {
-        Serial.println("Id sonde externe non connue");
+        Serial.println(F("Id sonde externe non connue"));
       }
       // Mettre à jour le temps de la dernière transmission
       lastTxExtSonTime = currentTime;
@@ -528,9 +528,9 @@ void loop()
       }
       if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
       {
-        Serial.println("Failed to publish Payload to MQTT");
+        Serial.println(F("Failed to publish Payload to MQTT"));
       }
-      Serial.println("");
+      Serial.println(F(""));
     }
   }
   client.loop();
@@ -564,16 +564,16 @@ void initOTA()
     // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
     Serial.println("Start updating " + type); })
       .onEnd([]()
-             { Serial.println("\nEnd"); })
+             { Serial.println(F("\nEnd")); })
       .onProgress([](unsigned int progress, unsigned int total)
                   { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); })
       .onError([](ota_error_t error)
                {
     Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed"); });
+    if (error == OTA_AUTH_ERROR) Serial.println(F("Auth Failed"));
+    else if (error == OTA_BEGIN_ERROR) Serial.println(F("Begin Failed"));
+    else if (error == OTA_CONNECT_ERROR) Serial.println(F("Connect Failed"));
+    else if (error == OTA_RECEIVE_ERROR) Serial.println(F("Receive Failed"));
+    else if (error == OTA_END_ERROR) Serial.println(F("End Failed")); });
   ArduinoOTA.begin();
 }
