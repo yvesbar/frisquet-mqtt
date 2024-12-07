@@ -1,6 +1,6 @@
 // config.h
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONF_H
+#define CONF_H
 
 const char* ssid = "ssid wifi";  // Mettre votre SSID Wifi
 const char* password = "wifi password";  // Mettre votre mot de passe Wifi
