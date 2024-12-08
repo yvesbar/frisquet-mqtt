@@ -207,8 +207,8 @@ void handleModeChange(const char *newMode)
   int txState = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
   if (txState == RADIOLIB_ERR_NONE)
   {
-    //Serial.print("Mode transmis avec succès : ");
-    //Serial.println(newMode);
+    // Serial.print("Mode transmis avec succès : ");
+    // Serial.println(newMode);
     waitingForResponse = true;
     startWaitTime = millis(); // On note le début de l’attente
   }
@@ -216,16 +216,6 @@ void handleModeChange(const char *newMode)
   {
     Serial.println("Erreur lors de l'envoi du mode !");
   }
-  // Publier le nouveau mode sur MQTT
-  //if (client.publish("homeassistant/select/frisquet/mode/state", newMode))
-  //{
-  //  Serial.print("Mode publié sur MQTT : ");
-  //  Serial.println(newMode);
-  //}
-  //else
-  //{
-  //  Serial.println("Erreur lors de la publication du mode !");
-  //}
 }
 //****************************************************************************
 void callback(char *topic, byte *payload, unsigned int length)
@@ -329,7 +319,7 @@ void connectToMqtt()
     Serial.println(F("Connecting to MQTT..."));
     if (client.connect("ESP32 Frisquet", mqttUsername, mqttPassword))
     {
-      //Serial.println(F("Connected to MQTT"));
+      // Serial.println(F("Connected to MQTT"));
     }
     else
     {
@@ -441,11 +431,11 @@ void txExtSonTemp()
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
   // Afficher le payload dans la console
-  //Serial.print("Payload Sonde transmit: ");
+  // Serial.print("Payload Sonde transmit: ");
   for (int i = 0; i < sizeof(TempExTx); i++)
   {
-    //Serial.printf("%02X ", TempExTx[i]);
-    //Serial.print(" ");
+    // Serial.printf("%02X ", TempExTx[i]);
+    // Serial.print(" ");
   }
   Serial.println();
   // Transmettre la chaine TempExTx
@@ -458,13 +448,13 @@ void txfriConMsg()
 
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-  //Serial.print(F("Envoi de la trame Con index "));
-  //Serial.println(conMsgIndex);
+  // Serial.print(F("Envoi de la trame Con index "));
+  // Serial.println(conMsgIndex);
 
   int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
   if (state == RADIOLIB_ERR_NONE)
   {
-    //Serial.println(F("Transmission Con réussie"));
+    // Serial.println(F("Transmission Con réussie"));
   }
   else
   {
@@ -659,13 +649,13 @@ void setup()
   client.setCallback(callback);
   preferences.end(); // Fermez la mémoire NVS ici
   if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_extSon_id != 0x00)
-      {
-        onSon = true;
-      }
+  {
+    onSon = true;
+  }
   if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
-      {
-        onCon = true;
-      }
+  {
+    onCon = true;
+  }
 }
 //****************************************************************************
 void adaptMod(uint8_t modeValue)
@@ -696,8 +686,8 @@ void adaptMod(uint8_t modeValue)
   // Publier le mode sur le topic MQTT
   if (client.publish(topic, mode))
   {
-    //Serial.print("Mode publié sur MQTT : ");
-    //Serial.println(mode);
+    // Serial.print("Mode publié sur MQTT : ");
+    // Serial.println(mode);
   }
   else
   {
@@ -735,13 +725,12 @@ void handleRadioPacket(byte *byteArr, int len)
     {
       TxByteArrConRep[3] = byteArr[3];
       memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
-      delay(100);
       // Envoi de la chaine d'association
       int txState = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
       if (txState == RADIOLIB_ERR_NONE)
       {
-        //Serial.println("Transmission réussie !");
-        // Appeler adaptMod avec la valeur extraite de byteArr[10]
+        // Serial.println("Transmission réussie !");
+        //  Appeler adaptMod avec la valeur extraite de byteArr[10]
         uint8_t modeValue = TxByteArrConRep[10];
         adaptMod(modeValue);
       }
@@ -751,9 +740,10 @@ void handleRadioPacket(byte *byteArr, int len)
       }
     }
   }
-  else if (len == 55 && waitingForResponse) {
-      waitingForResponse = false;
-    }
+  else if (len == 55 && waitingForResponse)
+  {
+    waitingForResponse = false;
+  }
   for (int i = 0; i < len; i++)
   {
     sprintf(message + strlen(message), "%02X ", byteArr[i]);
@@ -768,7 +758,13 @@ void handleRadioPacket(byte *byteArr, int len)
 //****************************************************************************
 void loop()
 {
-  // DateTime();
+  byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+  int state = radio.receive(byteArr, 0);
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    int len = radio.getPacketLength();
+    handleRadioPacket(byteArr, len);
+  }
   if (eraseNvsFrisquet == "ON")
   {
     eraseNvs();
@@ -827,34 +823,34 @@ void loop()
       counter = 0;
     }
     counter++;
-    //Changement de mode depuis HA
-    if (waitingForResponse) {
-    unsigned long currentTime = millis();
-
-    // Vérification du timeout des 2 minutes
-    if (currentTime - startWaitTime >= maxWaitTime) {
-      waitingForResponse = false;
-      Serial.println("Timeout mode");
-    } else {
-      // Réenvoi toutes les 2 secondes
-      if (currentTime - lastTxModeTime >= retryInterval) {
-        int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
-        if (state == RADIOLIB_ERR_NONE) {
-          //Serial.println("Ré-envoi de TxByteArrConMod");
-        } else {
-          Serial.println("Erreur de ré-envoi de TxByteArrConMod");
-        }
-        lastTxModeTime = currentTime;
-      }
-    }
-  }
-
-    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
-    int state = radio.receive(byteArr, 0);
-    if (state == RADIOLIB_ERR_NONE)
+    // Changement de mode depuis HA
+    if (waitingForResponse)
     {
-      int len = radio.getPacketLength();
-      handleRadioPacket(byteArr, len);
+      unsigned long currentTime = millis();
+
+      // Vérification du timeout des 2 minutes
+      if (currentTime - startWaitTime >= maxWaitTime)
+      {
+        waitingForResponse = false;
+        Serial.println("Timeout mode");
+      }
+      else
+      {
+        // Réenvoi toutes les 2 secondes
+        if (currentTime - lastTxModeTime >= retryInterval)
+        {
+          int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
+          if (state == RADIOLIB_ERR_NONE)
+          {
+            // Serial.println("Ré-envoi de TxByteArrConMod");
+          }
+          else
+          {
+            Serial.println("Erreur de ré-envoi de TxByteArrConMod");
+          }
+          lastTxModeTime = currentTime;
+        }
+      }
     }
   }
   client.loop();
