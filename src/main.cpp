@@ -55,11 +55,11 @@ const char *ASS_CON_TOPIC = "homeassistant/switch/frisquet/assconnect/set";
 const char *RES_NVS_TOPIC = "homeassistant/switch/frisquet/erasenvs/set";
 uint8_t TempExTx[] = {0x80, 0x20, 0x00, 0x00, 0x01, 0x17, 0x9c, 0x54, 0x00, 0x04, 0xa0, 0x29, 0x00, 0x01, 0x02, 0x00, 0x00}; // envoi température
 byte TxByteArr[10] = {0x80, 0x20, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                           // association Sonde exterieure
-byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
-byte TxByteArrCon1[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
-byte TxByteArrCon2[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
-byte TxByteArrCon3[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
-byte TxByteArrCon4[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x04, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
+byte TxByteArrCon1[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
+byte TxByteArrCon2[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
+byte TxByteArrCon3[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
+byte TxByteArrCon4[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
 //****************************************************************************
 // Array pour envoyé les trames au connect avec un loop qui espace
 int conMsgIndex = 0;
@@ -210,6 +210,10 @@ void callback(char *topic, byte *payload, unsigned int length)
       assSonFrisquet = String(message);
       assSonFrisquetChanged = true;
       client.publish("homeassistant/switch/frisquet/asssonde/state", message);
+      if (assSonFrisquet == "OFF")
+      {
+        initNvs();
+      }
     }
   }
   else if (strcmp(topic, ASS_CON_TOPIC) == 0)
@@ -219,6 +223,10 @@ void callback(char *topic, byte *payload, unsigned int length)
       assConFrisquet = String(message);
       assConFrisquetChanged = true;
       client.publish("homeassistant/switch/frisquet/assconnect/state", message);
+      if (assConFrisquet == "OFF")
+      {
+        initNvs();
+      }
     }
   }
   else if (strcmp(topic, RES_NVS_TOPIC) == 0)
@@ -226,7 +234,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     if (eraseNvsFrisquet != String(message))
     {
       eraseNvsFrisquet = String(message);
-      assConFrisquetChanged = true;
+      //assConFrisquetChanged = true;
       client.publish("homeassistant/switch/frisquet/erasenvs/state", message);
     }
   }
@@ -496,32 +504,41 @@ bool associateDevice(
   }
 }
 //****************************************************************************
-void assExtSon()
+bool assExtSon()
 {
-
-  associateDevice(
+  bool result = associateDevice(
       TxByteArr, sizeof(TxByteArr),
       def_Network_id,
       "son_id",
       ASS_SON_TOPIC,
       "homeassistant/switch/frisquet/asssonde/state");
 
-  // Mettre à jour de la variable sonde
-  assSonFrisquet = "OFF";
+  if (result) {
+    Serial.println("Association de la sonde réussie !");
+    assSonFrisquet = "OFF";
+  } else {
+    Serial.println("Echec de l'association de la sonde !");
+    // Action en cas d'échec, ex. retenter ou notifier
+  }
+  return result;
 }
 //****************************************************************************
-void assFriCon()
+bool assFriCon()
 {
-
-  associateDevice(
+  bool result = associateDevice(
       TxByteArrFriCon, sizeof(TxByteArrFriCon),
       def_Network_id,
       "con_id",
       ASS_CON_TOPIC,
       "homeassistant/switch/frisquet/assconnect/state");
 
-  // Mettre à jour la variable globale correspondante si vous en avez une.
-  assConFrisquet = "OFF";
+  if (result) {
+    Serial.println("Association du Frisquet Connect réussie !");
+    assConFrisquet = "OFF";
+  } else {
+    Serial.println("Echec de l'association du Frisquet Connect !");
+  }
+  return result;
 }
 //****************************************************************************
 void initOTA();
