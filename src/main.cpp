@@ -60,6 +60,11 @@ byte TxByteArrCon1[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0xA0, 0x2B, 0x00, 
 byte TxByteArrCon2[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
 byte TxByteArrCon3[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
 byte TxByteArrCon4[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+byte TxByteArrConRep[49] = {
+    0x80, 0x7E, 0x39, 0x18, 0x88, 0x17, 0x2A, 0x91, 0x6E, 0x1E, 0x05, 0x21, 0x00, 0x00, 0xE0, 0xFF,
+    0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
+    0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF,
+    0x1F};
 //****************************************************************************
 // Array pour envoyé les trames au connect avec un loop qui espace
 int conMsgIndex = 0;
@@ -234,7 +239,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     if (eraseNvsFrisquet != String(message))
     {
       eraseNvsFrisquet = String(message);
-      //assConFrisquetChanged = true;
+      // assConFrisquetChanged = true;
       client.publish("homeassistant/switch/frisquet/erasenvs/state", message);
     }
   }
@@ -447,7 +452,8 @@ bool associateDevice(
       deviceTxArr[2] = byteArr[2];
       deviceTxArr[3] = byteArr[3];
       deviceTxArr[4] = byteArr[4] | 0x80; // Ajouter 0x80 au 5eme byte
-
+      deviceTxArr[5] = byteArr[5];
+      deviceTxArr[6] = byteArr[6];
       delay(100);
       // Envoi de la chaine d'association
       int txState = radio.transmit(deviceTxArr, deviceTxArrLen);
@@ -513,10 +519,13 @@ bool assExtSon()
       ASS_SON_TOPIC,
       "homeassistant/switch/frisquet/asssonde/state");
 
-  if (result) {
+  if (result)
+  {
     Serial.println("Association de la sonde réussie !");
     assSonFrisquet = "OFF";
-  } else {
+  }
+  else
+  {
     Serial.println("Echec de l'association de la sonde !");
     // Action en cas d'échec, ex. retenter ou notifier
   }
@@ -532,10 +541,13 @@ bool assFriCon()
       ASS_CON_TOPIC,
       "homeassistant/switch/frisquet/assconnect/state");
 
-  if (result) {
+  if (result)
+  {
     Serial.println("Association du Frisquet Connect réussie !");
     assConFrisquet = "OFF";
-  } else {
+  }
+  else
+  {
     Serial.println("Echec de l'association du Frisquet Connect !");
   }
   return result;
@@ -562,7 +574,7 @@ void setup()
   // Initialize OLED display
   Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
   Heltec.display->init();
-  //Heltec.display->flipScreenVertically();
+  // Heltec.display->flipScreenVertically();
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->clear();
   Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
@@ -605,6 +617,17 @@ void handleRadioPacket(byte *byteArr, int len)
     char tempconsignePayload[10];
     snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
     publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
+  }
+  else if (len == 63)
+  {
+    if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x08 && byteArr[5] == 0x17)
+    {
+      TxByteArrConRep[3] = byteArr[3];
+      memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
+      delay(100);
+      // Envoi de la chaine d'association
+      int txState = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
+    }
   }
   for (int i = 0; i < len; i++)
   {
