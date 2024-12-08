@@ -37,6 +37,13 @@ float temperatureconsValue;
 float extSonVal;
 WiFiClient espClient;
 PubSubClient client(espClient);
+bool waitingForResponse = false;
+unsigned long startWaitTime = 0;
+unsigned long lastTxModeTime = 0;
+const unsigned long maxWaitTime = 240000; // 2 minutes en ms
+const unsigned long retryInterval = 2500; // 2 secondes en ms
+bool onSon = false;
+bool onCon = false;
 
 // Drapeaux pour indiquer si les données ont changé
 bool tempAmbianteChanged = false;
@@ -65,6 +72,11 @@ byte TxByteArrConRep[49] = {
     0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
     0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF,
     0x1F};
+byte TxByteArrConMod[63] = {
+    0x80, 0x7E, 0x39, 0x18, 0x08, 0x17, 0xA1, 0x54, 0x00, 0x18, 0xA1, 0x54, 0x00, 0x18, 0x30, 0x91,
+    0x6E, 0x1E, 0x08, 0x21, 0x00, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF,
+    0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF,
+    0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F};
 //****************************************************************************
 // Array pour envoyé les trames au connect avec un loop qui espace
 int conMsgIndex = 0;
@@ -114,25 +126,6 @@ void initNvs()
   }
 }
 //****************************************************************************
-void sendTxByteArr()
-{
-  int state = radio.transmit(TxByteArr, sizeof(TxByteArr));
-  if (state == RADIOLIB_ERR_NONE)
-  {
-    Serial.println(F("Transmission réussie"));
-    for (int i = 0; i < sizeof(TxByteArr); i++)
-    {
-      Serial.printf("%02X ", TxByteArr[i]); // Serial.print(TempExTx[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-  }
-  else
-  {
-    Serial.println(F("Erreur lors de la transmission"));
-  }
-}
-//****************************************************************************
 void updateDisplay()
 {
   if (tempAmbianteChanged || tempExterieureChanged || tempConsigneChanged || modeFrisquetChanged)
@@ -161,6 +154,78 @@ void updateDisplay()
     assSonFrisquetChanged = false;
     assConFrisquetChanged = false;
   }
+}
+//****************************************************************************
+void handleModeChange(const char *newMode)
+{
+  // Déterminer la valeur du mode à transmettre avec un switch
+  uint8_t modeValue1 = 0x00; // Par défaut, valeur invalide
+  uint8_t modeValue2 = 0x00;
+  bool modeValid = true;
+
+  switch (newMode[0]) // Utiliser le premier caractère pour optimiser
+  {
+  case 'A': // "Auto"
+    modeValue1 = 0x05;
+    modeValue2 = 0x21;
+    break;
+  case 'C': // "Confort"
+    modeValue1 = 0x06;
+    modeValue2 = 0x21;
+    break;
+  case 'R': // "Réduit"
+    modeValue1 = 0x07;
+    modeValue2 = 0x21;
+    break;
+  case 'H': // "Hors gel"
+    modeValue1 = 0x08;
+    modeValue2 = 0x21;
+    break;
+  default:
+    modeValid = false; // Mode non valide
+    break;
+  }
+
+  if (!modeValid)
+  {
+    Serial.println("Mode non reconnu !");
+    return; // Sortir si le mode est inconnu
+  }
+
+  // Assigner la valeur du mode à TxByteArrConMod
+  TxByteArrConMod[3] = conMsgNum;
+  TxByteArrConMod[18] = modeValue1;
+  TxByteArrConMod[19] = modeValue2;
+
+  conMsgNum += 1;
+  // Si conMsgNum dépasse 255, le remettre à une valeur valide (par exemple, 3)
+  if (conMsgNum > 0xFF)
+  {
+    conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
+  }
+  // Envoyer la chaîne via LoRa
+  int txState = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
+  if (txState == RADIOLIB_ERR_NONE)
+  {
+    //Serial.print("Mode transmis avec succès : ");
+    //Serial.println(newMode);
+    waitingForResponse = true;
+    startWaitTime = millis(); // On note le début de l’attente
+  }
+  else
+  {
+    Serial.println("Erreur lors de l'envoi du mode !");
+  }
+  // Publier le nouveau mode sur MQTT
+  //if (client.publish("homeassistant/select/frisquet/mode/state", newMode))
+  //{
+  //  Serial.print("Mode publié sur MQTT : ");
+  //  Serial.println(newMode);
+  //}
+  //else
+  //{
+  //  Serial.println("Erreur lors de la publication du mode !");
+  //}
 }
 //****************************************************************************
 void callback(char *topic, byte *payload, unsigned int length)
@@ -205,7 +270,8 @@ void callback(char *topic, byte *payload, unsigned int length)
     {
       modeFrisquet = String(message);
       modeFrisquetChanged = true;
-      client.publish("homeassistant/select/frisquet/mode/state", message);
+      handleModeChange(message);
+      // client.publish("homeassistant/select/frisquet/mode/state", message);
     }
   }
   else if (strcmp(topic, ASS_SON_TOPIC) == 0)
@@ -263,7 +329,7 @@ void connectToMqtt()
     Serial.println(F("Connecting to MQTT..."));
     if (client.connect("ESP32 Frisquet", mqttUsername, mqttPassword))
     {
-      Serial.println(F("Connected to MQTT"));
+      //Serial.println(F("Connected to MQTT"));
     }
     else
     {
@@ -375,11 +441,11 @@ void txExtSonTemp()
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
   // Afficher le payload dans la console
-  Serial.print("Payload Sonde transmit: ");
+  //Serial.print("Payload Sonde transmit: ");
   for (int i = 0; i < sizeof(TempExTx); i++)
   {
-    Serial.printf("%02X ", TempExTx[i]);
-    Serial.print(" ");
+    //Serial.printf("%02X ", TempExTx[i]);
+    //Serial.print(" ");
   }
   Serial.println();
   // Transmettre la chaine TempExTx
@@ -392,17 +458,17 @@ void txfriConMsg()
 
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-  Serial.print(F("Envoi de la trame Con index "));
-  Serial.println(conMsgIndex);
+  //Serial.print(F("Envoi de la trame Con index "));
+  //Serial.println(conMsgIndex);
 
   int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
   if (state == RADIOLIB_ERR_NONE)
   {
-    Serial.println(F("Transmission Con réussie"));
+    //Serial.println(F("Transmission Con réussie"));
   }
   else
   {
-    Serial.println(F("Erreur lors de la transmission Con"));
+    Serial.println(F("Erreur trans. Con"));
   }
 
   // Incrémenter conMsgNum de 4 et gérer le débordement
@@ -592,6 +658,51 @@ void setup()
   connectToTopic();
   client.setCallback(callback);
   preferences.end(); // Fermez la mémoire NVS ici
+  if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_extSon_id != 0x00)
+      {
+        onSon = true;
+      }
+  if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
+      {
+        onCon = true;
+      }
+}
+//****************************************************************************
+void adaptMod(uint8_t modeValue)
+{
+  const char *topic = "homeassistant/select/frisquet/mode/state"; // Topic MQTT pour le mode
+  const char *mode;
+
+  // Traduire la valeur en un mode texte
+  switch (modeValue)
+  {
+  case 0x05:
+    mode = "Auto";
+    break;
+  case 0x06:
+    mode = "Confort";
+    break;
+  case 0x07:
+    mode = "Réduit";
+    break;
+  case 0x08:
+    mode = "Hors gel";
+    break;
+  default:
+    mode = "Inconnu"; // Valeur par défaut si non reconnue
+    break;
+  }
+
+  // Publier le mode sur le topic MQTT
+  if (client.publish(topic, mode))
+  {
+    //Serial.print("Mode publié sur MQTT : ");
+    //Serial.println(mode);
+  }
+  else
+  {
+    Serial.println("Erreur lors de la publication du mode !");
+  }
 }
 //****************************************************************************
 void handleRadioPacket(byte *byteArr, int len)
@@ -627,8 +738,22 @@ void handleRadioPacket(byte *byteArr, int len)
       delay(100);
       // Envoi de la chaine d'association
       int txState = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
+      if (txState == RADIOLIB_ERR_NONE)
+      {
+        //Serial.println("Transmission réussie !");
+        // Appeler adaptMod avec la valeur extraite de byteArr[10]
+        uint8_t modeValue = TxByteArrConRep[10];
+        adaptMod(modeValue);
+      }
+      else
+      {
+        Serial.println("Erreur lors de la transmission !");
+      }
     }
   }
+  else if (len == 55 && waitingForResponse) {
+      waitingForResponse = false;
+    }
   for (int i = 0; i < len; i++)
   {
     sprintf(message + strlen(message), "%02X ", byteArr[i]);
@@ -661,36 +786,27 @@ void loop()
   {
     unsigned long currentTime = millis();
     // Vérifier si 10 minutes se sont écoulées depuis la dernière transmission
-    if (currentTime - lastTxExtSonTime >= txExtSonInterval)
+    if (onSon)
     {
       // Vérifier si custom_extSon_id n'est pas égal à 0 byte
-      if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_extSon_id != 0x00)
+      if (currentTime - lastTxExtSonTime >= txExtSonInterval)
       {
         txExtSonTemp(); // Appeler la fonction pour transmettre les données
-      }
-      else
-      {
-        Serial.println(F("Id sonde externe non connue"));
       }
       // Mettre à jour le temps de la dernière transmission
       lastTxExtSonTime = currentTime;
     }
     // Vérifier si c'est le moment de démarrer l'envoi des 4 trames
-    if (currentTime - lastConMsgTime >= conMsgInterval)
+    if (onCon)
     {
       // Vérifier si custom_friCon_id n'est pas égal à 0 byte
-      if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
+      if (currentTime - lastConMsgTime >= conMsgInterval)
       {
         // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
         conMsgIndex = 0;
         conMsgToSendCount = 4;
         lastConMsgTime = currentTime; // on remet le timer à zéro
       }
-      else
-      {
-        Serial.println(F("Id frisquet connect non connue"));
-      }
-      // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
     }
 
     // Si on a des trames à envoyer depuis connect
@@ -705,12 +821,33 @@ void loop()
     ArduinoOTA.handle();
 
     // Compteur pour limiter la déclaration des topic
-    if (counter >= 100)
+    if (counter >= 1000)
     {
       connectToTopic();
       counter = 0;
     }
     counter++;
+    //Changement de mode depuis HA
+    if (waitingForResponse) {
+    unsigned long currentTime = millis();
+
+    // Vérification du timeout des 2 minutes
+    if (currentTime - startWaitTime >= maxWaitTime) {
+      waitingForResponse = false;
+      Serial.println("Timeout mode");
+    } else {
+      // Réenvoi toutes les 2 secondes
+      if (currentTime - lastTxModeTime >= retryInterval) {
+        int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
+        if (state == RADIOLIB_ERR_NONE) {
+          //Serial.println("Ré-envoi de TxByteArrConMod");
+        } else {
+          Serial.println("Erreur de ré-envoi de TxByteArrConMod");
+        }
+        lastTxModeTime = currentTime;
+      }
+    }
+  }
 
     byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
     int state = radio.receive(byteArr, 0);
