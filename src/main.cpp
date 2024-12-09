@@ -852,6 +852,13 @@ void loop()
         }
       }
     }
+    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+    int state = radio.receive(byteArr, 0);
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      int len = radio.getPacketLength();
+      handleRadioPacket(byteArr, len);
+    }
   }
   client.loop();
   updateDisplay(); // Mettre à jour l'affichage si nécessaire
