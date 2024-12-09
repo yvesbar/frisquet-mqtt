@@ -42,8 +42,6 @@ unsigned long startWaitTime = 0;
 unsigned long lastTxModeTime = 0;
 const unsigned long maxWaitTime = 240000; // 2 minutes en ms
 const unsigned long retryInterval = 2500; // 2 secondes en ms
-bool onSon = false;
-bool onCon = false;
 
 // Drapeaux pour indiquer si les données ont changé
 bool tempAmbianteChanged = false;
@@ -62,11 +60,11 @@ const char *ASS_CON_TOPIC = "homeassistant/switch/frisquet/assconnect/set";
 const char *RES_NVS_TOPIC = "homeassistant/switch/frisquet/erasenvs/set";
 uint8_t TempExTx[] = {0x80, 0x20, 0x00, 0x00, 0x01, 0x17, 0x9c, 0x54, 0x00, 0x04, 0xa0, 0x29, 0x00, 0x01, 0x02, 0x00, 0x00}; // envoi température
 byte TxByteArr[10] = {0x80, 0x20, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                           // association Sonde exterieure
-byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x04, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
-byte TxByteArrCon1[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
-byte TxByteArrCon2[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
-byte TxByteArrCon3[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
-byte TxByteArrCon4[10] = {0x80, 0x7e, 0x00, 0x00, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
+byte TxByteArrCon1[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
+byte TxByteArrCon2[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
+byte TxByteArrCon3[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
+byte TxByteArrCon4[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
 byte TxByteArrConRep[49] = {
     0x80, 0x7E, 0x39, 0x18, 0x88, 0x17, 0x2A, 0x91, 0x6E, 0x1E, 0x05, 0x21, 0x00, 0x00, 0xE0, 0xFF,
     0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
@@ -123,6 +121,25 @@ void initNvs()
     // Enregistre custom_network_id dans NVS
     preferences.putBytes("net_id", custom_network_id, sizeof(custom_network_id));
     preferences.end(); // Ferme la mémoire NVS
+  }
+}
+//****************************************************************************
+void sendTxByteArr()
+{
+  int state = radio.transmit(TxByteArr, sizeof(TxByteArr));
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    Serial.println(F("Transmission réussie"));
+    for (int i = 0; i < sizeof(TxByteArr); i++)
+    {
+      Serial.printf("%02X ", TxByteArr[i]); // Serial.print(TempExTx[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+  }
+  else
+  {
+    Serial.println(F("Erreur lors de la transmission"));
   }
 }
 //****************************************************************************
@@ -295,7 +312,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     if (eraseNvsFrisquet != String(message))
     {
       eraseNvsFrisquet = String(message);
-      // assConFrisquetChanged = true;
       client.publish("homeassistant/switch/frisquet/erasenvs/state", message);
     }
   }
@@ -319,11 +335,10 @@ void connectToMqtt()
     Serial.println(F("Connecting to MQTT..."));
     if (client.connect("ESP32 Frisquet", mqttUsername, mqttPassword))
     {
-      // Serial.println(F("Connected to MQTT"));
     }
     else
     {
-      Serial.print(F("Failed to connect to MQTT, rc="));
+      Serial.print(F("Failed to connect MQTT, rc="));
       Serial.print(F(client.state()));
       Serial.println(F(" Retrying in 5 seconds..."));
       delay(5000);
@@ -431,11 +446,11 @@ void txExtSonTemp()
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
   // Afficher le payload dans la console
-  // Serial.print("Payload Sonde transmit: ");
+  Serial.print("Sonde transmit: ");
   for (int i = 0; i < sizeof(TempExTx); i++)
   {
-    // Serial.printf("%02X ", TempExTx[i]);
-    // Serial.print(" ");
+    Serial.printf("%02X ", TempExTx[i]);
+    Serial.print(" ");
   }
   Serial.println();
   // Transmettre la chaine TempExTx
@@ -448,17 +463,17 @@ void txfriConMsg()
 
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-  // Serial.print(F("Envoi de la trame Con index "));
-  // Serial.println(conMsgIndex);
+  Serial.print(F("Envoi de la trame Con index "));
+  Serial.println(conMsgIndex);
 
   int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
   if (state == RADIOLIB_ERR_NONE)
   {
-    // Serial.println(F("Transmission Con réussie"));
+    Serial.println(F("Transmission Con réussie"));
   }
   else
   {
-    Serial.println(F("Erreur trans. Con"));
+    Serial.println(F("Erreur lors de la transmission Con"));
   }
 
   // Incrémenter conMsgNum de 4 et gérer le débordement
@@ -510,6 +525,7 @@ bool associateDevice(
       deviceTxArr[4] = byteArr[4] | 0x80; // Ajouter 0x80 au 5eme byte
       deviceTxArr[5] = byteArr[5];
       deviceTxArr[6] = byteArr[6];
+
       delay(100);
       // Envoi de la chaine d'association
       int txState = radio.transmit(deviceTxArr, deviceTxArrLen);
@@ -630,7 +646,7 @@ void setup()
   // Initialize OLED display
   Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
   Heltec.display->init();
-  // Heltec.display->flipScreenVertically();
+  //Heltec.display->flipScreenVertically();
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->clear();
   Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
@@ -648,14 +664,6 @@ void setup()
   connectToTopic();
   client.setCallback(callback);
   preferences.end(); // Fermez la mémoire NVS ici
-  if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_extSon_id != 0x00)
-  {
-    onSon = true;
-  }
-  if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
-  {
-    onCon = true;
-  }
 }
 //****************************************************************************
 void adaptMod(uint8_t modeValue)
@@ -758,7 +766,7 @@ void handleRadioPacket(byte *byteArr, int len)
 //****************************************************************************
 void loop()
 {
-  byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
   int state = radio.receive(byteArr, 0);
   if (state == RADIOLIB_ERR_NONE)
   {
@@ -782,27 +790,36 @@ void loop()
   {
     unsigned long currentTime = millis();
     // Vérifier si 10 minutes se sont écoulées depuis la dernière transmission
-    if (onSon)
+    if (currentTime - lastTxExtSonTime >= txExtSonInterval)
     {
       // Vérifier si custom_extSon_id n'est pas égal à 0 byte
-      if (currentTime - lastTxExtSonTime >= txExtSonInterval)
+      if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_extSon_id != 0x00)
       {
         txExtSonTemp(); // Appeler la fonction pour transmettre les données
+      }
+      else
+      {
+        Serial.println(F("Id sonde externe non connue"));
       }
       // Mettre à jour le temps de la dernière transmission
       lastTxExtSonTime = currentTime;
     }
     // Vérifier si c'est le moment de démarrer l'envoi des 4 trames
-    if (onCon)
+    if (currentTime - lastConMsgTime >= conMsgInterval)
     {
       // Vérifier si custom_friCon_id n'est pas égal à 0 byte
-      if (currentTime - lastConMsgTime >= conMsgInterval)
+      if (memcmp(custom_network_id, "\xFF\xFF\xFF\xFF", 4) != 0 && custom_friCon_id != 0x00)
       {
         // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
         conMsgIndex = 0;
         conMsgToSendCount = 4;
         lastConMsgTime = currentTime; // on remet le timer à zéro
       }
+      else
+      {
+        Serial.println(F("Id frisquet connect non connue"));
+      }
+      // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
     }
 
     // Si on a des trames à envoyer depuis connect
@@ -817,7 +834,7 @@ void loop()
     ArduinoOTA.handle();
 
     // Compteur pour limiter la déclaration des topic
-    if (counter >= 1000)
+    if (counter >= 100)
     {
       connectToTopic();
       counter = 0;
