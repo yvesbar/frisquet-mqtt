@@ -12,7 +12,7 @@
 
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
-unsigned long lastTxExtSonTime = 0;            // Variable dernière transmission sonde
+unsigned long lastTxExtSonTime = 0;           // Variable dernière transmission sonde
 const unsigned long txExtSonInterval = 60000; // Interval de transmission en millisecondes (10 minutes)
 unsigned long lastConMsgTime = 0;
 const unsigned long conMsgInterval = 600000; // 10 minutes
@@ -627,7 +627,7 @@ void setup()
   // Initialize OLED display
   Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
   Heltec.display->init();
-  //Heltec.display->flipScreenVertically();
+  // Heltec.display->flipScreenVertically();
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->clear();
   Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
@@ -747,7 +747,7 @@ void handleRadioPacket(byte *byteArr, int len)
 //****************************************************************************
 void loop()
 {
-    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+  byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
   int state = radio.receive(byteArr, 0);
   if (state == RADIOLIB_ERR_NONE)
   {
@@ -831,7 +831,6 @@ void loop()
       {
         waitingForResponse = false;
         Serial.println("Timeout mode");
-
       }
       else
       {
@@ -839,7 +838,7 @@ void loop()
         if (currentTime - lastTxModeTime >= retryInterval)
         {
           handleModeChange(modeFrisquet.c_str());
-          //int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
+          // int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
           lastTxModeTime = currentTime;
         }
       }
