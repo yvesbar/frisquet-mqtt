@@ -227,7 +227,6 @@ void handleModeChange(const char *newMode)
     // Serial.print("Mode transmis avec succès : ");
     // Serial.println(newMode);
     waitingForResponse = true;
-    startWaitTime = millis(); // On note le début de l’attente
   }
   else
   {
@@ -278,6 +277,7 @@ void callback(char *topic, byte *payload, unsigned int length)
       modeFrisquet = String(message);
       modeFrisquetChanged = true;
       handleModeChange(message);
+      startWaitTime = millis(); // On note le début de l’attente
       // client.publish("homeassistant/select/frisquet/mode/state", message);
     }
   }
@@ -845,26 +845,20 @@ void loop()
     {
       unsigned long currentTime = millis();
 
-      // Vérification du timeout des 2 minutes
+      // Vérification du timeout des 4 minutes
       if (currentTime - startWaitTime >= maxWaitTime)
       {
         waitingForResponse = false;
         Serial.println("Timeout mode");
+
       }
       else
       {
         // Réenvoi toutes les 2 secondes
         if (currentTime - lastTxModeTime >= retryInterval)
         {
-          int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
-          if (state == RADIOLIB_ERR_NONE)
-          {
-            // Serial.println("Ré-envoi de TxByteArrConMod");
-          }
-          else
-          {
-            Serial.println("Erreur de ré-envoi de TxByteArrConMod");
-          }
+          handleModeChange(modeFrisquet.c_str());
+          //int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
           lastTxModeTime = currentTime;
         }
       }
