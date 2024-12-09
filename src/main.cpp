@@ -205,8 +205,6 @@ void handleModeChange(const char *newMode)
   int txState = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
   if (txState == RADIOLIB_ERR_NONE)
   {
-    // Serial.print("Mode transmis avec succès : ");
-    // Serial.println(newMode);
     waitingForResponse = true;
   }
   else
@@ -426,14 +424,6 @@ void txExtSonTemp()
   TempExTx[3] = sonMsgNum;
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
-  // Afficher le payload dans la console
-  Serial.print("Sonde transmit: ");
-  for (int i = 0; i < sizeof(TempExTx); i++)
-  {
-    Serial.printf("%02X ", TempExTx[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
   // Transmettre la chaine TempExTx
   int state = radio.transmit(TempExTx, sizeof(TempExTx));
 }
@@ -444,13 +434,10 @@ void txfriConMsg()
 
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-  Serial.print(F("Envoi de la trame Con index "));
-  Serial.println(conMsgIndex);
-
+//envoi de la trame
   int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
   if (state == RADIOLIB_ERR_NONE)
   {
-    Serial.println(F("Transmission Con réussie"));
   }
   else
   {
@@ -492,10 +479,10 @@ bool associateDevice(
   if (state == RADIOLIB_ERR_NONE)
   {
     int len = radio.getPacketLength();
-    Serial.printf("RECEIVED [%2d] : ", len);
-    for (int i = 0; i < len; i++)
-      Serial.printf("%02X ", byteArr[i]);
-    Serial.println();
+    //Serial.printf("RECEIVED [%2d] : ", len);
+    //for (int i = 0; i < len; i++)
+    // Serial.printf("%02X ", byteArr[i]);
+    //Serial.println();
 
     // Vérifier la longueur attendue (ici 11 comme pour l'extSon) ou adapter selon le device
     if (len == 11)
@@ -524,16 +511,16 @@ bool associateDevice(
         uint8_t deviceId = preferences.getUChar(idKey, 0);
         preferences.end();
 
-        Serial.print(F("Custom Network ID: "));
-        for (int i = 0; i < sizeof(custom_network_id); i++)
-        {
-          Serial.printf("%02X ", custom_network_id[i]);
-        }
-        Serial.println();
+        //Serial.print(F("Custom Network ID: "));
+        //for (int i = 0; i < sizeof(custom_network_id); i++)
+        //{
+        //  Serial.printf("%02X ", custom_network_id[i]);
+        //}
+        //Serial.println();
 
-        Serial.print(F("Custom Device ID: "));
-        Serial.printf("%02X ", deviceId);
-        Serial.println();
+        //Serial.print(F("Custom Device ID: "));
+        //Serial.printf("%02X ", deviceId);
+        //Serial.println();
 
         // Publier sur MQTT pour indiquer que l'association est terminée (mettre l'état OFF)
         publishMessage(assCommandTopic, "OFF");
@@ -675,8 +662,6 @@ void adaptMod(uint8_t modeValue)
   // Publier le mode sur le topic MQTT
   if (client.publish(topic, mode))
   {
-    // Serial.print("Mode publié sur MQTT : ");
-    // Serial.println(mode);
   }
   else
   {
@@ -718,7 +703,6 @@ void handleRadioPacket(byte *byteArr, int len)
       int txState = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
       if (txState == RADIOLIB_ERR_NONE)
       {
-        // Serial.println("Transmission réussie !");
         //  Appeler adaptMod avec la valeur extraite de byteArr[10]
         uint8_t modeValue = TxByteArrConRep[10];
         adaptMod(modeValue);
@@ -842,13 +826,6 @@ void loop()
           lastTxModeTime = currentTime;
         }
       }
-    }
-    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
-    int state = radio.receive(byteArr, 0);
-    if (state == RADIOLIB_ERR_NONE)
-    {
-      int len = radio.getPacketLength();
-      handleRadioPacket(byteArr, len);
     }
   }
   client.loop();
