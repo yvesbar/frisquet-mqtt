@@ -13,7 +13,7 @@
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
 unsigned long lastTxExtSonTime = 0;            // Variable dernière transmission sonde
-const unsigned long txExtSonInterval = 600000; // Interval de transmission en millisecondes (10 minutes)
+const unsigned long txExtSonInterval = 60000; // Interval de transmission en millisecondes (10 minutes)
 unsigned long lastConMsgTime = 0;
 const unsigned long conMsgInterval = 600000; // 10 minutes
 String DateTimeRes;
@@ -121,25 +121,6 @@ void initNvs()
     // Enregistre custom_network_id dans NVS
     preferences.putBytes("net_id", custom_network_id, sizeof(custom_network_id));
     preferences.end(); // Ferme la mémoire NVS
-  }
-}
-//****************************************************************************
-void sendTxByteArr()
-{
-  int state = radio.transmit(TxByteArr, sizeof(TxByteArr));
-  if (state == RADIOLIB_ERR_NONE)
-  {
-    Serial.println(F("Transmission réussie"));
-    for (int i = 0; i < sizeof(TxByteArr); i++)
-    {
-      Serial.printf("%02X ", TxByteArr[i]); // Serial.print(TempExTx[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-  }
-  else
-  {
-    Serial.println(F("Erreur lors de la transmission"));
   }
 }
 //****************************************************************************
