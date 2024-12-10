@@ -13,9 +13,9 @@
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
 unsigned long lastTxExtSonTime = 0;           // Variable dernière transmission sonde
-const unsigned long txExtSonInterval = 60000; // Interval de transmission en millisecondes (10 minutes)
+const unsigned long txExtSonInterval = 600000;// Interval de transmission en millisecondes (10 minutes)
 unsigned long lastConMsgTime = 0;
-const unsigned long conMsgInterval = 600000; // 10 minutes
+const unsigned long conMsgInterval = 600000;  // 10 minutes
 String DateTimeRes;
 String tempAmbiante;
 String tempExterieure;
@@ -42,7 +42,7 @@ unsigned long startWaitTime = 0;
 unsigned long lastTxModeTime = 0;
 const unsigned long maxWaitTime = 240000; // 2 minutes en ms
 const unsigned long retryInterval = 2500; // 2 secondes en ms
-
+const char hexDigits[] = "0123456789ABCDEF";
 // Drapeaux pour indiquer si les données ont changé
 bool tempAmbianteChanged = false;
 bool tempExterieureChanged = false;
@@ -717,11 +717,33 @@ void handleRadioPacket(byte *byteArr, int len)
   {
     waitingForResponse = false;
   }
-  for (int i = 0; i < len; i++)
+/*   for (int i = 0; i < len; i++)
   {
     sprintf(message + strlen(message), "%02X ", byteArr[i]);
     Serial.printf("%02X ", byteArr[i]);
+  } */
+  int pos = 0;
+
+  // Convertir chaque octet en deux caractères hexadécimaux
+  for (int i = 0; i < len; i++) {
+    uint8_t b = byteArr[i];
+    // Premier nibble (4 bits)
+    message[pos++] = hexDigits[b >> 4];
+    // Deuxième nibble
+    message[pos++] = hexDigits[b & 0x0F];
+    // Ajouter un espace séparateur
+    message[pos++] = ' ';
+    // Vérifier qu'on ne dépasse pas la taille du buffer
+    if (pos >= (int)(sizeof(message) - 2)) break; 
   }
+
+  // Si on a ajouté un espace en trop à la fin, on l'enlève
+  if (pos > 0 && message[pos-1] == ' ') {
+    pos--;
+  }
+
+  // Terminer la chaîne
+  message[pos] = '\0';
   if (!client.publish("homeassistant/sensor/frisquet/payload/state", message))
   {
     Serial.println(F("Failed to publish Payload to MQTT"));
@@ -799,7 +821,7 @@ void loop()
     ArduinoOTA.handle();
 
     // Compteur pour limiter la déclaration des topic
-    if (counter >= 100)
+    if (counter >= 1000)
     {
       connectToTopic();
       counter = 0;
