@@ -9,13 +9,19 @@
 #include <Preferences.h>
 #include "image.h"
 #include "conf.h"
+volatile bool receivedFlag = false;
+#define SS GPIO_NUM_8
+#define RST_LoRa GPIO_NUM_12
+#define BUSY_LoRa GPIO_NUM_13
+#define DIO0 GPIO_NUM_14
 
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
-unsigned long lastTxExtSonTime = 0;           // Variable dernière transmission sonde
-const unsigned long txExtSonInterval = 600000;// Interval de transmission en millisecondes (10 minutes)
+unsigned long lastTxExtSonTime = 30000;           // Variable dernière transmission sonde ajout de 30 sec d'intervale pour ne pas envoyé en meme temps que le connect
+const unsigned long txExtSonInterval = 600000; // Interval de transmission en millisecondes (10 minutes)
 unsigned long lastConMsgTime = 0;
-const unsigned long conMsgInterval = 600000;  // 10 minutes
+const unsigned long conMsgInterval = 600000; // 10 minutes
+unsigned long lastconMsgInterval = 0; // pour l'interval de 1 seconde entre les messages du Con a cha
 String DateTimeRes;
 String tempAmbiante;
 String tempExterieure;
@@ -40,8 +46,8 @@ PubSubClient client(espClient);
 bool waitingForResponse = false;
 unsigned long startWaitTime = 0;
 unsigned long lastTxModeTime = 0;
-const unsigned long maxWaitTime = 240000; // 2 minutes en ms
-const unsigned long retryInterval = 2500; // 2 secondes en ms
+const unsigned long maxWaitTime = 360000; // 6 minutes en ms
+const unsigned long retryInterval = 2500; // 2.5 secondes en ms
 const char hexDigits[] = "0123456789ABCDEF";
 // Drapeaux pour indiquer si les données ont changé
 bool tempAmbianteChanged = false;
@@ -154,6 +160,17 @@ void updateDisplay()
   }
 }
 //****************************************************************************
+void txConfiguration()
+{
+  int state = radio.beginFSK();
+  state = radio.setFrequency(868.96);
+  state = radio.setBitRate(25.0);
+  state = radio.setFrequencyDeviation(50.0);
+  state = radio.setRxBandwidth(250.0);
+  state = radio.setPreambleLength(4);
+  state = radio.setSyncWord(custom_network_id, sizeof(custom_network_id));
+}
+//****************************************************************************
 void handleModeChange(const char *newMode)
 {
   // Déterminer la valeur du mode à transmettre avec un switch
@@ -202,8 +219,8 @@ void handleModeChange(const char *newMode)
     conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
   }
   // Envoyer la chaîne via LoRa
-  int txState = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
-  if (txState == RADIOLIB_ERR_NONE)
+  int state = radio.transmit(TxByteArrConMod, sizeof(TxByteArrConMod));
+  if (state == RADIOLIB_ERR_NONE)
   {
     waitingForResponse = true;
   }
@@ -211,6 +228,16 @@ void handleModeChange(const char *newMode)
   {
     Serial.println("Erreur lors de l'envoi du mode !");
   }
+  state = radio.startReceive();
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      Serial.println(F("startreceive success!"));
+    }
+    else
+    {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
 }
 //****************************************************************************
 void callback(char *topic, byte *payload, unsigned int length)
@@ -294,17 +321,6 @@ void callback(char *topic, byte *payload, unsigned int length)
       client.publish("homeassistant/switch/frisquet/erasenvs/state", message);
     }
   }
-}
-//****************************************************************************
-void txConfiguration()
-{
-  int state = radio.beginFSK();
-  state = radio.setFrequency(868.96);
-  state = radio.setBitRate(25.0);
-  state = radio.setFrequencyDeviation(50.0);
-  state = radio.setRxBandwidth(250.0);
-  state = radio.setPreambleLength(4);
-  state = radio.setSyncWord(custom_network_id, sizeof(custom_network_id));
 }
 //****************************************************************************
 void connectToMqtt()
@@ -424,20 +440,60 @@ void txExtSonTemp()
   TempExTx[3] = sonMsgNum;
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
+  // Afficher le payload dans la console
+  // Serial.print("Sonde transmit: ");
+  //for (int i = 0; i < sizeof(TempExTx); i++)
+  //{
+  //  Serial.printf("%02X ", TempExTx[i]);
+  //  Serial.print(" ");
+  //}
+  Serial.println();
   // Transmettre la chaine TempExTx
   int state = radio.transmit(TempExTx, sizeof(TempExTx));
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    Serial.println(F("Transmission temp. ext. réussie"));
+    state = radio.startReceive();
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      Serial.println(F("startreceive success!"));
+    }
+    else
+    {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
+  }
+  else
+  {
+    Serial.println(F("Erreur trans. temp ext."));
+    Serial.println(state);
+  }
 }
 //****************************************************************************
 void txfriConMsg()
 {
   // Insérer conMsgNum et custom_friCon_id dans les trames à envoyer
-
+if (millis() - lastconMsgInterval >= 1000) // 4000 ms = 4 secondes
+  {
   conMsgArrays[conMsgIndex][3] = conMsgNum;
   conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-//envoi de la trame
+  // envoi de la trame
   int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
   if (state == RADIOLIB_ERR_NONE)
   {
+    Serial.println(F("Transmission msg. Con. réussie"));
+
+    state = radio.startReceive();
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      Serial.println(F("startreceive success!"));
+    }
+    else
+    {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
   }
   else
   {
@@ -446,7 +502,7 @@ void txfriConMsg()
 
   // Incrémenter conMsgNum de 4 et gérer le débordement
   conMsgNum += 4;
-  // Si conMsgNum dépasse 255, le remettre à une valeur valide (par exemple, 3)
+  // Si conMsgNum dépasse 255, le remettre à une valeur valide
   if (conMsgNum > 0xFF)
   {
     conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
@@ -455,6 +511,13 @@ void txfriConMsg()
   // Préparer la prochaine trame
   conMsgIndex++;
   conMsgToSendCount--;
+  lastconMsgInterval = millis();
+  }
+  else
+  {
+    // Attente si le délai de 1 secondes n'est pas encore atteint
+    Serial.println(F("Attente avant la prochaine transmission..."));
+  }
 }
 //****************************************************************************
 bool associateDevice(
@@ -479,10 +542,10 @@ bool associateDevice(
   if (state == RADIOLIB_ERR_NONE)
   {
     int len = radio.getPacketLength();
-    //Serial.printf("RECEIVED [%2d] : ", len);
-    //for (int i = 0; i < len; i++)
-    // Serial.printf("%02X ", byteArr[i]);
-    //Serial.println();
+    // Serial.printf("RECEIVED [%2d] : ", len);
+    // for (int i = 0; i < len; i++)
+    //  Serial.printf("%02X ", byteArr[i]);
+    // Serial.println();
 
     // Vérifier la longueur attendue (ici 11 comme pour l'extSon) ou adapter selon le device
     if (len == 11)
@@ -511,16 +574,16 @@ bool associateDevice(
         uint8_t deviceId = preferences.getUChar(idKey, 0);
         preferences.end();
 
-        //Serial.print(F("Custom Network ID: "));
-        //for (int i = 0; i < sizeof(custom_network_id); i++)
-        //{
-        //  Serial.printf("%02X ", custom_network_id[i]);
-        //}
-        //Serial.println();
+         Serial.print(F("Custom Network ID: "));
+         for (int i = 0; i < sizeof(custom_network_id); i++)
+        {
+           Serial.printf("%02X ", custom_network_id[i]);
+         }
+         Serial.println();
 
-        //Serial.print(F("Custom Device ID: "));
-        //Serial.printf("%02X ", deviceId);
-        //Serial.println();
+         Serial.print(F("Custom Device ID: "));
+         Serial.printf("%02X ", deviceId);
+         Serial.println();
 
         // Publier sur MQTT pour indiquer que l'association est terminée (mettre l'état OFF)
         publishMessage(assCommandTopic, "OFF");
@@ -595,6 +658,12 @@ bool assFriCon()
 //****************************************************************************
 void initOTA();
 //****************************************************************************
+void setFlag(void)
+{
+  // we got a packet, set the flag
+  receivedFlag = true;
+}
+//****************************************************************************
 void setup()
 {
   Serial.begin(115200);
@@ -620,7 +689,6 @@ void setup()
   Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
   Heltec.display->display();
 
-  txConfiguration();
   initOTA();
   Serial.println(F("Ready"));
   Serial.print(F("IP address: "));
@@ -631,6 +699,31 @@ void setup()
   connectToMqtt();
   connectToTopic();
   client.setCallback(callback);
+
+  // set the function that will be called
+  // when new packet is received
+  radio.setPacketReceivedAction(setFlag);
+
+  // start listening for Radio packets
+  int state = radio.beginFSK();
+  state = radio.setFrequency(868.96);
+  state = radio.setBitRate(25.0);
+  state = radio.setFrequencyDeviation(50.0);
+  state = radio.setRxBandwidth(250.0);
+  state = radio.setPreambleLength(4);
+  state = radio.setSyncWord(custom_network_id, sizeof(custom_network_id));
+  Serial.print(F("[SX1262] Starting to listen ... "));
+  state = radio.startReceive();
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    Serial.println(F("success!"));
+  }
+  else
+  {
+    Serial.print(F("failed, code "));
+    Serial.println(state);
+  }
+
   preferences.end(); // Fermez la mémoire NVS ici
 }
 //****************************************************************************
@@ -662,6 +755,7 @@ void adaptMod(uint8_t modeValue)
   // Publier le mode sur le topic MQTT
   if (client.publish(topic, mode))
   {
+    Serial.println("Mode mis a jour sur MQTT");
   }
   else
   {
@@ -700,8 +794,8 @@ void handleRadioPacket(byte *byteArr, int len)
       TxByteArrConRep[3] = byteArr[3];
       memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
       // Envoi de la chaine d'association
-      int txState = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
-      if (txState == RADIOLIB_ERR_NONE)
+      int State = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
+      if (State == RADIOLIB_ERR_NONE)
       {
         //  Appeler adaptMod avec la valeur extraite de byteArr[10]
         uint8_t modeValue = TxByteArrConRep[10];
@@ -717,15 +811,11 @@ void handleRadioPacket(byte *byteArr, int len)
   {
     waitingForResponse = false;
   }
-/*   for (int i = 0; i < len; i++)
-  {
-    sprintf(message + strlen(message), "%02X ", byteArr[i]);
-    Serial.printf("%02X ", byteArr[i]);
-  } */
   int pos = 0;
 
   // Convertir chaque octet en deux caractères hexadécimaux
-  for (int i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++)
+  {
     uint8_t b = byteArr[i];
     // Premier nibble (4 bits)
     message[pos++] = hexDigits[b >> 4];
@@ -734,11 +824,13 @@ void handleRadioPacket(byte *byteArr, int len)
     // Ajouter un espace séparateur
     message[pos++] = ' ';
     // Vérifier qu'on ne dépasse pas la taille du buffer
-    if (pos >= (int)(sizeof(message) - 2)) break; 
+    if (pos >= (int)(sizeof(message) - 2))
+      break;
   }
 
   // Si on a ajouté un espace en trop à la fin, on l'enlève
-  if (pos > 0 && message[pos-1] == ' ') {
+  if (pos > 0 && message[pos - 1] == ' ')
+  {
     pos--;
   }
 
@@ -753,13 +845,59 @@ void handleRadioPacket(byte *byteArr, int len)
 //****************************************************************************
 void loop()
 {
-  byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
-  int state = radio.receive(byteArr, 0);
-  if (state == RADIOLIB_ERR_NONE)
+  // check if the flag is set
+  if (receivedFlag)
   {
-    int len = radio.getPacketLength();
-    handleRadioPacket(byteArr, len);
+    // reset flag
+    receivedFlag = false;
+
+    // you can read received data as an Arduino String
+    byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+    int state = radio.readData(byteArr, 0);
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      // packet was successfully received
+      Serial.println(F("[SX1262] Received packet!"));
+
+      // print data of the packet
+      Serial.print(F("[SX1262] Data:\t\t"));
+      int len = radio.getPacketLength();
+      handleRadioPacket(byteArr, len);
+
+      // print RSSI (Received Signal Strength Indicator)
+      //Serial.print(F("[SX1262] RSSI:\t\t"));
+      //Serial.print(radio.getRSSI());
+      //Serial.println(F(" dBm"));
+
+      // print SNR (Signal-to-Noise Ratio)
+      //Serial.print(F("[SX1262] SNR:\t\t"));
+      //Serial.print(radio.getSNR());
+      //Serial.println(F(" dB"));
+
+      // print frequency error
+      //Serial.print(F("[SX1262] Frequency error:\t"));
+      //Serial.print(radio.getFrequencyError());
+      //Serial.println(F(" Hz"));
+    }
+    else if (state == RADIOLIB_ERR_CRC_MISMATCH)
+    {
+      // packet was received, but is malformed
+      Serial.println(F("CRC error!"));
+    }
+    else
+    {
+      // some other error occurred
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
   }
+  // byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
+  // int state = radio.receive(byteArr, 0);
+  // if (state == RADIOLIB_ERR_NONE)
+  //{
+  //  int len = radio.getPacketLength();
+  //  handleRadioPacket(byteArr, len);
+  //}
   if (eraseNvsFrisquet == "ON")
   {
     eraseNvs();
@@ -806,7 +944,6 @@ void loop()
       {
         Serial.println(F("Id frisquet connect non connue"));
       }
-      // On remet à zéro l'index et on indique qu'il faut envoyer 4 trames
     }
 
     // Si on a des trames à envoyer depuis connect
@@ -821,7 +958,7 @@ void loop()
     ArduinoOTA.handle();
 
     // Compteur pour limiter la déclaration des topic
-    if (counter >= 1000)
+    if (counter >= 100000)
     {
       connectToTopic();
       counter = 0;
