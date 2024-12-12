@@ -17,11 +17,11 @@ volatile bool receivedFlag = false;
 
 SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
-unsigned long lastTxExtSonTime = 30000;           // Variable dernière transmission sonde ajout de 30 sec d'intervale pour ne pas envoyé en meme temps que le connect
+unsigned long lastTxExtSonTime = 30000;        // Variable dernière transmission sonde ajout de 30 sec d'intervale pour ne pas envoyé en meme temps que le connect
 const unsigned long txExtSonInterval = 600000; // Interval de transmission en millisecondes (10 minutes)
 unsigned long lastConMsgTime = 0;
 const unsigned long conMsgInterval = 600000; // 10 minutes
-unsigned long lastconMsgInterval = 0; // pour l'interval de 1 seconde entre les messages du Con a cha
+unsigned long lastconMsgInterval = 0;        // pour l'interval de 1 seconde entre les messages du Con a cha
 String DateTimeRes;
 String tempAmbiante;
 String tempExterieure;
@@ -229,15 +229,15 @@ void handleModeChange(const char *newMode)
     Serial.println("Erreur lors de l'envoi du mode !");
   }
   state = radio.startReceive();
-    if (state == RADIOLIB_ERR_NONE)
-    {
-      Serial.println(F("startreceive success!"));
-    }
-    else
-    {
-      Serial.print(F("failed, code "));
-      Serial.println(state);
-    }
+  if (state == RADIOLIB_ERR_NONE)
+  {
+    Serial.println(F("startreceive success!"));
+  }
+  else
+  {
+    Serial.print(F("failed, code "));
+    Serial.println(state);
+  }
 }
 //****************************************************************************
 void callback(char *topic, byte *payload, unsigned int length)
@@ -440,13 +440,7 @@ void txExtSonTemp()
   TempExTx[3] = sonMsgNum;
   TempExTx[15] = extSonTempBytes[0]; // Remplacer le 16ème byte par l'octet de poids fort de extSonTemp
   TempExTx[16] = extSonTempBytes[1]; // Remplacer le 17ème byte par l'octet de poids faible de extSonTemp
-  // Afficher le payload dans la console
-  // Serial.print("Sonde transmit: ");
-  //for (int i = 0; i < sizeof(TempExTx); i++)
-  //{
-  //  Serial.printf("%02X ", TempExTx[i]);
-  //  Serial.print(" ");
-  //}
+
   Serial.println();
   // Transmettre la chaine TempExTx
   int state = radio.transmit(TempExTx, sizeof(TempExTx));
@@ -474,49 +468,48 @@ void txExtSonTemp()
 void txfriConMsg()
 {
   // Insérer conMsgNum et custom_friCon_id dans les trames à envoyer
-if (millis() - lastconMsgInterval >= 1000) // 4000 ms = 4 secondes
+  if (millis() - lastconMsgInterval >= 1000) // 4000 ms = 4 secondes
   {
-  conMsgArrays[conMsgIndex][3] = conMsgNum;
-  conMsgArrays[conMsgIndex][2] = custom_friCon_id;
-  // envoi de la trame
-  int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
-  if (state == RADIOLIB_ERR_NONE)
-  {
-    Serial.println(F("Transmission msg. Con. réussie"));
-
-    state = radio.startReceive();
+    conMsgArrays[conMsgIndex][3] = conMsgNum;
+    conMsgArrays[conMsgIndex][2] = custom_friCon_id;
+    // envoi de la trame
+    int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
     if (state == RADIOLIB_ERR_NONE)
     {
-      Serial.println(F("startreceive success!"));
+      Serial.println(F("Transmission msg. Con. réussie"));
+
+      state = radio.startReceive();
+      if (state == RADIOLIB_ERR_NONE)
+      {
+        Serial.println(F("startreceive success!"));
+      }
+      else
+      {
+        Serial.print(F("failed, code "));
+        Serial.println(state);
+      }
     }
     else
     {
-      Serial.print(F("failed, code "));
-      Serial.println(state);
+      Serial.println(F("Erreur lors de la transmission Con"));
     }
-  }
-  else
-  {
-    Serial.println(F("Erreur lors de la transmission Con"));
-  }
 
-  // Incrémenter conMsgNum de 4 et gérer le débordement
-  conMsgNum += 4;
-  // Si conMsgNum dépasse 255, le remettre à une valeur valide
-  if (conMsgNum > 0xFF)
-  {
-    conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
-  }
+    // Incrémenter conMsgNum de 4 et gérer le débordement
+    conMsgNum += 4;
+    // Si conMsgNum dépasse 255, le remettre à une valeur valide
+    if (conMsgNum > 0xFF)
+    {
+      conMsgNum = 0x03; // Recommencer à 3 pour maintenir le décalage
+    }
 
-  // Préparer la prochaine trame
-  conMsgIndex++;
-  conMsgToSendCount--;
-  lastconMsgInterval = millis();
+    // Préparer la prochaine trame
+    conMsgIndex++;
+    conMsgToSendCount--;
+    lastconMsgInterval = millis();
   }
   else
   {
     // Attente si le délai de 1 secondes n'est pas encore atteint
-    Serial.println(F("Attente avant la prochaine transmission..."));
   }
 }
 //****************************************************************************
@@ -542,10 +535,10 @@ bool associateDevice(
   if (state == RADIOLIB_ERR_NONE)
   {
     int len = radio.getPacketLength();
-    // Serial.printf("RECEIVED [%2d] : ", len);
-    // for (int i = 0; i < len; i++)
-    //  Serial.printf("%02X ", byteArr[i]);
-    // Serial.println();
+    Serial.printf("RECEIVED [%2d] : ", len);
+    for (int i = 0; i < len; i++)
+      Serial.printf("%02X ", byteArr[i]);
+    Serial.println();
 
     // Vérifier la longueur attendue (ici 11 comme pour l'extSon) ou adapter selon le device
     if (len == 11)
@@ -557,7 +550,6 @@ bool associateDevice(
       deviceTxArr[5] = byteArr[5];
       deviceTxArr[6] = byteArr[6];
 
-      delay(100);
       // Envoi de la chaine d'association
       int txState = radio.transmit(deviceTxArr, deviceTxArrLen);
       if (txState == RADIOLIB_ERR_NONE)
@@ -574,16 +566,16 @@ bool associateDevice(
         uint8_t deviceId = preferences.getUChar(idKey, 0);
         preferences.end();
 
-         Serial.print(F("Custom Network ID: "));
-         for (int i = 0; i < sizeof(custom_network_id); i++)
+        Serial.print(F("Custom Network ID: "));
+        for (int i = 0; i < sizeof(custom_network_id); i++)
         {
-           Serial.printf("%02X ", custom_network_id[i]);
-         }
-         Serial.println();
+          Serial.printf("%02X ", custom_network_id[i]);
+        }
+        Serial.println();
 
-         Serial.print(F("Custom Device ID: "));
-         Serial.printf("%02X ", deviceId);
-         Serial.println();
+        Serial.print(F("Custom Device ID: "));
+        Serial.printf("%02X ", deviceId);
+        Serial.println();
 
         // Publier sur MQTT pour indiquer que l'association est terminée (mettre l'état OFF)
         publishMessage(assCommandTopic, "OFF");
@@ -865,19 +857,19 @@ void loop()
       handleRadioPacket(byteArr, len);
 
       // print RSSI (Received Signal Strength Indicator)
-      //Serial.print(F("[SX1262] RSSI:\t\t"));
-      //Serial.print(radio.getRSSI());
-      //Serial.println(F(" dBm"));
+      // Serial.print(F("[SX1262] RSSI:\t\t"));
+      // Serial.print(radio.getRSSI());
+      // Serial.println(F(" dBm"));
 
       // print SNR (Signal-to-Noise Ratio)
-      //Serial.print(F("[SX1262] SNR:\t\t"));
-      //Serial.print(radio.getSNR());
-      //Serial.println(F(" dB"));
+      // Serial.print(F("[SX1262] SNR:\t\t"));
+      // Serial.print(radio.getSNR());
+      // Serial.println(F(" dB"));
 
       // print frequency error
-      //Serial.print(F("[SX1262] Frequency error:\t"));
-      //Serial.print(radio.getFrequencyError());
-      //Serial.println(F(" Hz"));
+      // Serial.print(F("[SX1262] Frequency error:\t"));
+      // Serial.print(radio.getFrequencyError());
+      // Serial.println(F(" Hz"));
     }
     else if (state == RADIOLIB_ERR_CRC_MISMATCH)
     {
@@ -891,13 +883,7 @@ void loop()
       Serial.println(state);
     }
   }
-  // byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
-  // int state = radio.receive(byteArr, 0);
-  // if (state == RADIOLIB_ERR_NONE)
-  //{
-  //  int len = radio.getPacketLength();
-  //  handleRadioPacket(byteArr, len);
-  //}
+
   if (eraseNvsFrisquet == "ON")
   {
     eraseNvs();
