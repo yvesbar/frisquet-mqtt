@@ -54,6 +54,7 @@ float extSonVal;
 WiFiClient espClient;
 PubSubClient client(espClient);
 bool waitingForResponse = false;
+bool sequenceMsg = true;
 unsigned long startWaitTime = 0;
 unsigned long lastTxModeTime = 0;
 const unsigned long maxWaitTime = 360000; // 6 minutes en ms
@@ -80,7 +81,9 @@ byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01
 byte TxByteArrCon1[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
 byte TxByteArrCon2[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
 byte TxByteArrCon3[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
-byte TxByteArrCon4[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+byte TxByteArrCon4[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x34, 0x00, 0x1C};                                       // message 7A	34	00	1C connect to chaudiere
+byte TxByteArrCon5[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xFC, 0x00, 0x1C};                                       // message 79	FC	00	1C connect to chaudiere
+
 byte TxByteArrConRep[49] = {
     0x80, 0x7E, 0x39, 0x18, 0x88, 0x17, 0x2A, 0x91, 0x6E, 0x1E, 0x05, 0x21, 0x00, 0x00, 0xE0, 0xFF,
     0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
@@ -100,8 +103,11 @@ byte *conMsgArrays[] = {
     TxByteArrCon1,
     TxByteArrCon2,
     TxByteArrCon3,
-    TxByteArrCon4};
+    TxByteArrCon4,
+    TxByteArrCon5};
 const int conMsgCount = 4;
+const int sequenceA[] = {0, 1, 2, 4}; // Correspond à TxByteArrCon1, TxByteArrCon2, TxByteArrCon3, TxByteArrCon5
+const int sequenceB[] = {0, 1, 3, 4}; // Correspond à TxByteArrCon1, TxByteArrCon2, TxByteArrCon4, TxByteArrCon5
 //****************************************************************************
 // Fonction pour publier un message MQTT
 void publishMessage(const char *topic, const char *payload)
@@ -334,18 +340,24 @@ void callback(char *topic, byte *payload, unsigned int length)
 //****************************************************************************
 void connectToMqtt()
 {
-  while (!client.connected())
+  if (!client.connected())
   {
     DBG_PRINTLN(F("Connecting to MQTT..."));
     if (client.connect("ESP32 Frisquet", mqttUsername, mqttPassword))
     {
+      DBG_PRINTLN(F("Connected to MQTT"));
+      // Vous pouvez publier des messages ou souscrire à des topics ici si nécessaire
     }
     else
     {
       DBG_PRINT(F("Failed to connect MQTT, rc="));
-      DBG_PRINT(F(client.state()));
+      DBG_PRINT(client.state());
       DBG_PRINTLN(F(" Retrying in 5 seconds..."));
-      delay(5000);
+      unsigned long retryTime = millis() + 5000;
+      while (millis() < retryTime)
+      {
+        client.loop();
+      }
     }
   }
 }
@@ -477,12 +489,14 @@ void txExtSonTemp()
 void txfriConMsg()
 {
   // Insérer conMsgNum et custom_friCon_id dans les trames à envoyer
-  if (millis() - lastconMsgInterval >= 1000) // 4000 ms = 4 secondes
+  if (millis() - lastconMsgInterval >= 2000) // 4000 ms = 4 secondes
   {
-    conMsgArrays[conMsgIndex][3] = conMsgNum;
-    conMsgArrays[conMsgIndex][2] = custom_friCon_id;
+    const int *currentSequence = sequenceMsg ? sequenceA : sequenceB;
+    int trameIndex = currentSequence[conMsgIndex];
+    conMsgArrays[trameIndex][3] = conMsgNum;
+    conMsgArrays[trameIndex][2] = custom_friCon_id;
     // envoi de la trame
-    int state = radio.transmit(conMsgArrays[conMsgIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
+    int state = radio.transmit(conMsgArrays[trameIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
     if (state == RADIOLIB_ERR_NONE)
     {
       DBG_PRINTLN(F("Transmission msg. Con. réussie"));
@@ -766,12 +780,6 @@ void adaptMod(uint8_t modeValue)
   }
 }
 //****************************************************************************
-void publishToMQTT(char *MQTT_Topic, float MQTT_Value)
-{
-  char MQTT_Payload[10];
-  snprintf(MQTT_Payload, sizeof(MQTT_Payload), "%.2f", MQTT_Value);
-}
-//****************************************************************************
 void handleRadioPacket(byte *byteArr, int len)
 {
   Serial.printf("RECEIVED [%2d] : ", len);
@@ -982,6 +990,7 @@ void loop()
         conMsgIndex = 0;
         conMsgToSendCount = 4;
         lastConMsgTime = currentTime; // on remet le timer à zéro
+        sequenceMsg = !sequenceMsg;
       }
       else
       {
