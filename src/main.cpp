@@ -43,7 +43,8 @@ String byteArrayToHexString(uint8_t *byteArray, int length);
 byte extSonTempBytes[2];
 byte sonMsgNum = 0x01;
 byte conMsgNum = 0x03;
-byte msgInfo = 0x00;
+byte msg79e0 = 0x00;
+byte msg7a18 = 0x00;
 int counter = 0;
 uint8_t custom_network_id[4];
 uint8_t custom_extSon_id;
@@ -440,6 +441,20 @@ void connectToTopic()
         "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
       })";
   client.publish(modeConfigTopic, modeConfigPayload, true); // true pour retenir le message
+
+// Publier le message de configuration pour MQTT de la consommation gaz
+  char consoConfigTopic[] = "homeassistant/sensor/frisquet/consogaz/config";
+  char consoConfigPayload[] = R"({
+        "uniq_id": "frisquet_conso_gaz",
+        "name": "Frisquet - conso. gaz",
+        "state_topic": "homeassistant/sensor/frisquet/consogaz/state",
+        "unit_of_measurement": "kWh",
+        "device_class": "energy",
+        "state_class": "total",
+        "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+      })";
+  client.publish(consoConfigTopic, consoConfigPayload, true); // true pour retenir le message
+
   // Souscrire aux topics temp ambiante, consigne, ext et mode
   client.subscribe(MODE_TOPIC);
   client.subscribe(ASS_SON_TOPIC);
@@ -502,7 +517,11 @@ void txfriConMsg()
       DBG_PRINTLN(F("Transmission msg. Con. réussie"));
       if (conMsgIndex == 1)
       {
-        msgInfo = conMsgNum;
+        msg79e0 = conMsgNum;
+      };
+      if (trameIndex == 2)
+      {
+        msg7a18 = conMsgNum;
       };
       state = radio.startReceive();
       if (state == RADIOLIB_ERR_NONE)
@@ -789,7 +808,7 @@ void handleRadioPacket(byte *byteArr, int len)
   {
     if (len == 63)
     {
-      if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msgInfo && byteArr[4] == 0x81 && byteArr[5] == 0x03)
+      if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg79e0 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
       {
         // Extract bytes 8 and 9 ECS
         int decimalValue1 = byteArr[7] << 8 | byteArr[8];
@@ -821,6 +840,15 @@ void handleRadioPacket(byte *byteArr, int len)
         char tempconsignePayload[10];
         snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
         publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
+      }
+      else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg7a18 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
+      {
+        // Extract bytes 28 and 29 conso gaz de la veille
+        int decimalValue1 = byteArr[27] << 8 | byteArr[28];
+        //float gazValue = decimalValue1;
+        char consoGaz[10];
+        snprintf(consoGaz, sizeof(consoGaz), "%d", decimalValue1);
+        publishMessage("homeassistant/sensor/frisquet/consogaz/state", consoGaz);
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x08 && byteArr[5] == 0x17)
       {
