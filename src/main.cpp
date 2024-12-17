@@ -78,7 +78,7 @@ const char *ASS_CON_TOPIC = "homeassistant/switch/frisquet/assconnect/set";
 const char *RES_NVS_TOPIC = "homeassistant/switch/frisquet/erasenvs/set";
 uint8_t TempExTx[] = {0x80, 0x20, 0x00, 0x00, 0x01, 0x17, 0x9c, 0x54, 0x00, 0x04, 0xa0, 0x29, 0x00, 0x01, 0x02, 0x00, 0x00}; // envoi température
 byte TxByteArr[10] = {0x80, 0x20, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                           // association Sonde exterieure
-byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Sonde exterieure
+byte TxByteArrFriCon[10] = {0x80, 0x7e, 0x00, 0x00, 0x82, 0x41, 0x01, 0x21, 0x01, 0x02};                                     // association Frisquet connect
 byte TxByteArrCon1[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0xA0, 0x2B, 0x00, 0x04};                                       // message A0	2B	00	04 connect to chaudiere
 byte TxByteArrCon2[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x79, 0xE0, 0x00, 0x1C};                                       // message 79	E0	00	1C connect to chaudiere
 byte TxByteArrCon3[10] = {0x80, 0x7e, 0x21, 0xE0, 0x01, 0x03, 0x7A, 0x18, 0x00, 0x1C};                                       // message 7A	18	00	1C connect to chaudiere
@@ -371,11 +371,11 @@ void connectToSensor(const char *topic, const char *name)
   snprintf(configPayload, sizeof(configPayload), R"(
 {
   "uniq_id": "frisquet_%s",
-  "name": "Frisquet - Temperature %s",
+  "name": "Temperature %s",
   "state_topic": "homeassistant/sensor/frisquet/%s/state",
   "unit_of_measurement": "°C",
   "device_class": "temperature",
-  "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+  "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
 }
 )",
            topic, name, topic);
@@ -390,12 +390,12 @@ void connectToSwitch(const char *topic, const char *name)
   snprintf(configPayload, sizeof(configPayload), R"(
 {
   "uniq_id": "frisquet_%s",
-  "name": "Frisquet - %s",
+  "name": "%s",
   "state_topic": "homeassistant/switch/frisquet/%s/state",
   "command_topic": "homeassistant/switch/frisquet/%s/set",
   "payload_on": "ON",
   "payload_off": "OFF",
-  "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+  "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
 }
 )",
            topic, name, topic, topic);
@@ -407,8 +407,8 @@ void connectToTopic()
   connectToSensor("tempAmbiante1", "ambiante Z1");
   connectToSensor("tempExterieure", "exterieure");
   connectToSensor("tempConsigne1", "consigne Z1");
-  connectToSensor("tempCDC", "CDC");
-  connectToSensor("tempECS", "ECS");
+  connectToSensor("tempCDC", "corps de chauffe");
+  connectToSensor("tempECS", "eau chaude sanitaire");
   connectToSensor("tempDepart", "depart");
   connectToSwitch("asssonde", "ass. sonde");
   connectToSwitch("assconnect", "ass. connect");
@@ -423,9 +423,10 @@ void connectToTopic()
   char payloadConfigTopic[] = "homeassistant/sensor/frisquet/payload/config";
   char payloadConfigPayload[] = R"(
 {
-  "name": "Frisquet - Payload",
+  "uniq_id": "frisquet_payload",
+  "name": "Payload",
   "state_topic": "homeassistant/sensor/frisquet/payload/state",
-  "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+  "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
 }
 )";
   client.publish(payloadConfigTopic, payloadConfigPayload);
@@ -434,24 +435,24 @@ void connectToTopic()
   char modeConfigTopic[] = "homeassistant/select/frisquet/mode/config";
   char modeConfigPayload[] = R"({
         "uniq_id": "frisquet_mode",
-        "name": "Frisquet - Mode",
+        "name": "Mode",
         "state_topic": "homeassistant/select/frisquet/mode/state",
         "command_topic": "homeassistant/select/frisquet/mode/set",
         "options": ["Auto", "Confort", "Réduit", "Hors gel"],
-        "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+        "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
       })";
   client.publish(modeConfigTopic, modeConfigPayload, true); // true pour retenir le message
 
-// Publier le message de configuration pour MQTT de la consommation gaz
+  // Publier le message de configuration pour MQTT de la consommation gaz
   char consoConfigTopic[] = "homeassistant/sensor/frisquet/consogaz/config";
   char consoConfigPayload[] = R"({
-        "uniq_id": "frisquet_conso_gaz",
-        "name": "Frisquet - conso. gaz",
+        "uniq_id": "frisquet_consogaz",
+        "name": "consommation gaz",
         "state_topic": "homeassistant/sensor/frisquet/consogaz/state",
         "unit_of_measurement": "kWh",
         "device_class": "energy",
         "state_class": "total",
-        "device":{"ids":["FrisquetConnect"],"mf":"Frisquet","name":"Frisquet Connect","mdl":"Frisquet Connect"}
+        "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
       })";
   client.publish(consoConfigTopic, consoConfigPayload, true); // true pour retenir le message
 
@@ -845,7 +846,7 @@ void handleRadioPacket(byte *byteArr, int len)
       {
         // Extract bytes 28 and 29 conso gaz de la veille
         int decimalValue1 = byteArr[27] << 8 | byteArr[28];
-        //float gazValue = decimalValue1;
+        // float gazValue = decimalValue1;
         char consoGaz[10];
         snprintf(consoGaz, sizeof(consoGaz), "%d", decimalValue1);
         publishMessage("homeassistant/sensor/frisquet/consogaz/state", consoGaz);
@@ -950,19 +951,19 @@ void loop()
       handleRadioPacket(byteArr, len);
 
       // print RSSI (Received Signal Strength Indicator)
-       DBG_PRINT(F("[SX1262] RSSI:\t\t"));
-       DBG_PRINT(radio.getRSSI());
-       DBG_PRINTLN(F(" dBm"));
+      DBG_PRINT(F("[SX1262] RSSI:\t\t"));
+      DBG_PRINT(radio.getRSSI());
+      DBG_PRINTLN(F(" dBm"));
 
       // print SNR (Signal-to-Noise Ratio)
-       DBG_PRINT(F("[SX1262] SNR:\t\t"));
-       DBG_PRINT(radio.getSNR());
-       DBG_PRINTLN(F(" dB"));
+      DBG_PRINT(F("[SX1262] SNR:\t\t"));
+      DBG_PRINT(radio.getSNR());
+      DBG_PRINTLN(F(" dB"));
 
       // print frequency error
-       DBG_PRINT(F("[SX1262] Frequency error:\t"));
-       DBG_PRINT(radio.getFrequencyError());
-       DBG_PRINTLN(F(" Hz"));
+      DBG_PRINT(F("[SX1262] Frequency error:\t"));
+      DBG_PRINT(radio.getFrequencyError());
+      DBG_PRINTLN(F(" Hz"));
     }
     else if (state == RADIOLIB_ERR_CRC_MISMATCH)
     {
