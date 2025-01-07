@@ -1058,6 +1058,7 @@ void loop()
       {
         DBG_PRINTLN(F("Id frisquet connect non connue"));
       }
+      lastConMsgTime = currentTime;
     }
 
     // Si on a des trames à envoyer depuis connect
