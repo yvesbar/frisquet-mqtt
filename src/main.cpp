@@ -234,6 +234,7 @@ void handleModeChange(const char *newMode)
   }
 
   // Assigner la valeur du mode à TxByteArrConMod
+  TxByteArrConMod[2] = custom_friCon_id;
   TxByteArrConMod[3] = conMsgNum;
   TxByteArrConMod[18] = modeValue1;
   TxByteArrConMod[19] = modeValue2;
@@ -552,8 +553,8 @@ void txfriConMsg()
   {
     const int *currentSequence = sequenceMsg ? sequenceA : sequenceB;
     int trameIndex = currentSequence[conMsgIndex];
-    conMsgArrays[trameIndex][3] = conMsgNum;
     conMsgArrays[trameIndex][2] = custom_friCon_id;
+    conMsgArrays[trameIndex][3] = conMsgNum;
     // envoi de la trame
     int state = radio.transmit(conMsgArrays[trameIndex], 10); // 10 est la taille de chaque tableau TxByteArrConX
     if (state == RADIOLIB_ERR_NONE)
