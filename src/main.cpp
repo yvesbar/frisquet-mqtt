@@ -36,6 +36,8 @@ String tempAmbiante;
 String tempExterieure;
 String tempConsigne;
 String modeFrisquet;
+String tempAmbiante2;
+String tempConsigne2;
 String assSonFrisquet;
 String assConFrisquet;
 String eraseNvsFrisquet;
@@ -72,6 +74,8 @@ bool assConFrisquetChanged = false;
 const char *TEMP_AMBIANTE1_TOPIC = "homeassistant/sensor/frisquet/tempAmbiante1/state";
 const char *TEMP_EXTERIEURE_TOPIC = "homeassistant/sensor/frisquet/tempExterieure/state";
 const char *TEMP_CONSIGNE1_TOPIC = "homeassistant/sensor/frisquet/tempConsigne1/state";
+const char *TEMP_AMBIANTE2_TOPIC = "homeassistant/sensor/frisquet/tempAmbiante2/state";
+const char *TEMP_CONSIGNE2_TOPIC = "homeassistant/sensor/frisquet/tempConsigne2/state";
 const char *MODE_TOPIC = "homeassistant/select/frisquet/mode/set";
 const char *ASS_SON_TOPIC = "homeassistant/switch/frisquet/asssonde/set";
 const char *ASS_CON_TOPIC = "homeassistant/switch/frisquet/assconnect/set";
@@ -154,8 +158,13 @@ void updateDisplay()
     Heltec.display->clear();
     Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
     Heltec.display->drawString(0, 11, "SonID: " + byteArrayToHexString(&custom_extSon_id, 1) + " ConID: " + byteArrayToHexString(&custom_friCon_id, 1));
-    Heltec.display->drawString(0, 22, "T° Amb: " + tempAmbiante + "°C " + "T° Ext: " + tempExterieure + "°C");
-    Heltec.display->drawString(0, 33, "T° Con: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
+    Heltec.display->drawString(0, 22, "T° Amb1: " + tempAmbiante + "°C " + "T° Ext: " + tempExterieure + "°C");
+    Heltec.display->drawString(0, 33, "T° Con1: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
+
+    if(sensorZ2) {
+      Heltec.display->drawString(0, 44, "T° Amb2: " + tempAmbiante2 + "°C");
+      Heltec.display->drawString(0, 55, "T° Con2: " + tempConsigne2 + "°C");
+    }
 
     Heltec.display->display();
     tempAmbianteChanged = false;
@@ -273,6 +282,14 @@ void callback(char *topic, byte *payload, unsigned int length)
       tempAmbianteChanged = true;
     }
   }
+  else if (strcmp(topic, TEMP_AMBIANTE2_TOPIC) == 0)
+  {
+    if (tempAmbiante2 != String(message))
+    {
+      tempAmbiante2 = String(message);
+      tempAmbianteChanged = true; // @todo
+    }
+  }
   else if (strcmp(topic, TEMP_EXTERIEURE_TOPIC) == 0)
   {
     if (tempExterieure != String(message))
@@ -290,6 +307,14 @@ void callback(char *topic, byte *payload, unsigned int length)
     if (tempConsigne != String(message))
     {
       tempConsigne = String(message);
+      tempConsigneChanged = true;
+    }
+  }
+  else if (strcmp(topic, TEMP_CONSIGNE2_TOPIC) == 0)
+  {
+    if (tempConsigne2 != String(message))
+    {
+      tempConsigne2 = String(message);
       tempConsigneChanged = true;
     }
   }
@@ -463,6 +488,11 @@ void connectToTopic()
   client.subscribe(TEMP_AMBIANTE1_TOPIC);
   client.subscribe(TEMP_EXTERIEURE_TOPIC);
   client.subscribe(TEMP_CONSIGNE1_TOPIC);
+
+  if(sensorZ2) {
+    client.subscribe(TEMP_CONSIGNE2_TOPIC);
+    client.subscribe(TEMP_AMBIANTE2_TOPIC);
+  }
 }
 void setDefaultNetwork()
 {
@@ -881,6 +911,9 @@ void handleRadioPacket(byte *byteArr, int len)
     if (len == 23)
     { // Check if the length is 23 bytes
 
+
+      bool sat1=byteArr[1] == 0x08;
+        
       // Extract bytes 16 and 17
       int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
       float temperatureValue = decimalValueTemp / 10.0;
@@ -890,11 +923,11 @@ void handleRadioPacket(byte *byteArr, int len)
       // Publish temperature to the "frisquet_temperature" MQTT topic
       char temperaturePayload[10];
       snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
-      publishMessage(TEMP_AMBIANTE1_TOPIC, temperaturePayload);
+      publishMessage(sat1 ? TEMP_AMBIANTE1_TOPIC : TEMP_AMBIANTE2_TOPIC, temperaturePayload);
       // Publish temperature to the "tempconsigne" MQTT topic
       char tempconsignePayload[10];
       snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
-      publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
+      publishMessage(sat1 ? TEMP_CONSIGNE1_TOPIC : TEMP_CONSIGNE2_TOPIC, tempconsignePayload);
     }
   }
   int pos = 0;
@@ -1025,6 +1058,7 @@ void loop()
       {
         DBG_PRINTLN(F("Id frisquet connect non connue"));
       }
+      lastConMsgTime = currentTime;
     }
 
     // Si on a des trames à envoyer depuis connect
