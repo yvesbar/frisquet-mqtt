@@ -8,11 +8,11 @@ This Arduino code is designed for a Heltec WiFi LoRa 32 V3. It will automaticall
 Buttons are :
 
 - switch to initiate the association of an emulated external temperature sensor
-- switch to initiate the association of an emulated Frisquet connect box (in a future release)
+- switch to initiate the association of an emulated Frisquet connect box
 
 Input select :
 
-- prefilled mode to manage heating mode of the boiler (in a future release)
+- prefilled mode to manage heating mode of the boiler
 
 Some of this code was found on https://forum.hacf.fr/t/pilotage-chaudiere-frisquet-eco-radio-system-visio/19814/90
  
