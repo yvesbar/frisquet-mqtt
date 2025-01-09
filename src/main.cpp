@@ -468,18 +468,31 @@ void connectToTopic()
       })";
   client.publish(modeConfigTopic, modeConfigPayload, true); // true pour retenir le message
 
-  // Publier le message de configuration pour MQTT de la consommation gaz
-  char consoConfigTopic[] = "homeassistant/sensor/frisquet/consogaz/config";
-  char consoConfigPayload[] = R"({
-        "uniq_id": "frisquet_consogaz",
-        "name": "consommation gaz",
-        "state_topic": "homeassistant/sensor/frisquet/consogaz/state",
+  // Publier le message de configuration pour MQTT de la consommation gaz pour le chauffage
+  char consoChConfigTopic[] = "homeassistant/sensor/frisquet/consogaz-ch/config";
+  char consoChConfigPayload[] = R"({
+        "uniq_id": "frisquet_consogaz_chauffage",
+        "name": "consommation gaz chauffage",
+        "state_topic": "homeassistant/sensor/frisquet/consogaz-ch/state",
         "unit_of_measurement": "kWh",
         "device_class": "energy",
         "state_class": "total",
         "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
       })";
-  client.publish(consoConfigTopic, consoConfigPayload, true); // true pour retenir le message
+  client.publish(consoChConfigTopic, consoChConfigPayload, true); // true pour retenir le message
+
+   // Publier le message de configuration pour MQTT de la consommation gaz pour l'eau chaude
+  char consoEcsConfigTopic[] = "homeassistant/sensor/frisquet/consogaz-ecs/config";
+  char consoEcsConfigPayload[] = R"({
+        "uniq_id": "frisquet_consogaz_ecs",
+        "name": "consommation gaz ECS",
+        "state_topic": "homeassistant/sensor/frisquet/consogaz-ecs/state",
+        "unit_of_measurement": "kWh",
+        "device_class": "energy",
+        "state_class": "total",
+        "device":{"ids":["Frisquet_MQTT"],"mf":"HA Community","name":"Frisquet MQTT","mdl":"ESP32 Heltec"}
+      })";
+  client.publish(consoEcsConfigTopic, consoEcsConfigPayload, true); // true pour retenir le message
 
   // Souscrire aux topics temp ambiante, consigne, ext et mode
   client.subscribe(MODE_TOPIC);
@@ -877,12 +890,20 @@ void handleRadioPacket(byte *byteArr, int len)
         // Extract bytes 28 and 29 conso gaz de la veille
         int decimalValue1 = byteArr[27] << 8 | byteArr[28];
         // float gazValue = decimalValue1;
-        char consoGaz[10];
-        snprintf(consoGaz, sizeof(consoGaz), "%d", decimalValue1);
-        publishMessage("homeassistant/sensor/frisquet/consogaz/state", consoGaz);
+        char consoGazCh[10];
+        snprintf(consoGazCh, sizeof(consoGazCh), "%d", decimalValue1);
+        publishMessage("homeassistant/sensor/frisquet/consogaz-ch/state", consoGazCh);
+
+        // Extract bytes 26 and 27 conso gaz de la veille
+        int decimalValue2 = byteArr[25] << 8 | byteArr[26];
+        // float gazValue = decimalValue1;
+        char consoGazEcs[10];
+        snprintf(consoGazEcs, sizeof(consoGazEcs), "%d", decimalValue2);
+        publishMessage("homeassistant/sensor/frisquet/consogaz-ecs/state", consoGazEcs);
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x08 && byteArr[5] == 0x17)
       {
+        TxByteArrConRep[2] = custom_friCon_id;
         TxByteArrConRep[3] = byteArr[3];
         memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
         // Envoi de la chaine d'association
