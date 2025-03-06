@@ -2,6 +2,8 @@
 #include <RadioLib.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include <heltec.h>
+#include <Preferences.h>
 
 #include "interfaces/Mqtt.h" 
 

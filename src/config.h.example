@@ -1,0 +1,14 @@
+#ifndef __CONFIG_H_
+#define __CONFIG_H_
+
+static const char* ssid = "";  // Mettre votre SSID Wifi
+static const char* password = "";  // Mettre votre mot de passe Wifi
+
+static const char* mqttServer = ""; // Mettre l'IP du serveur MQTT
+static const int mqttPort = 1883;
+static const char* mqttUsername = ""; // Mettre le user MQTT
+static const char* mqttPassword = ""; // Mettre votre mot de passe MQTT
+
+static uint8_t network_id[] = {0x00, 0x00, 0x00, 0x00}; // Remplacer NN par le network id de la chaudière
+
+#endif // CONFIG_H
