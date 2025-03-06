@@ -1,4 +1,12 @@
-#define DEBUG 0 // Mettre à 0 pour désactiver les impressions série, 1 pour les activer
+/*
+* 2ème octet = destinataire : 
+    0x80 : chaudière
+    0x08 : Satellite zone 1
+    0x09 : Satellite zone 2 (0x0a pour la zone 3 je suppose du coup)
+    0x25 : Module H (vanne 4 voies + sonde extérieure filaire) qui pilote la zone 2.
+*/
+
+#define DEBUG 1 // Mettre à 0 pour désactiver les impressions série, 1 pour les activer
 
 #if DEBUG
 #define DBG_PRINT(x) Serial.print(x)
@@ -164,14 +172,14 @@ void updateDisplay()
   if (tempAmbianteChanged || tempExterieureChanged || tempConsigneChanged || modeFrisquetChanged || tempAmbiante2Changed || tempConsigne2Changed || modeFrisquet2Changed)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
+    Heltec.display->drawString(0, 0, "NetID: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
     Heltec.display->drawString(0, 11, "SonID: " + byteArrayToHexString(&custom_extSon_id, 1) + " ConID: " + byteArrayToHexString(&custom_friCon_id, 1));
-    Heltec.display->drawString(0, 22, "T° Amb1: " + tempAmbiante + "°C " + "T° Ext: " + tempExterieure + "°C");
-    Heltec.display->drawString(0, 33, "T° Con1: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
+    Heltec.display->drawString(0, 22, "T° Am1: " + tempAmbiante + "°C " + "T° Ex: " + tempExterieure + "°C");
+    Heltec.display->drawString(0, 33, "T° Co1: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
 
     if(sensorZ2) {
-      Heltec.display->drawString(0, 44, "T° Amb2: " + tempAmbiante2 + "°C");
-      Heltec.display->drawString(0, 55, "T° Con2: " + tempConsigne2 + "°C");
+      Heltec.display->drawString(0, 44, "T° Am2: " + tempAmbiante2 + "°C");
+      Heltec.display->drawString(0, 55, "T° Co2: " + tempConsigne2 + "°C");
 
     tempAmbiante2Changed = false;
     tempConsigne2Changed = false;
@@ -314,6 +322,10 @@ void callback(char *topic, byte *payload, unsigned int length)
   }
   else if (strcmp(topic, TEMP_EXTERIEURE_TOPIC) == 0)
   {
+
+    //TODO changer ici
+    //sensorTempExt
+
     if (tempExterieure != String(message))
     {
       tempExterieure = String(message);
@@ -1049,18 +1061,20 @@ void handleRadioPacket(byte *byteArr, int len)
   }
   else
   {
-    if (len == 23)
-    { // Check if the length is 23 bytes
 
+    if (len == 23) { // Check if the length is 23 bytes
 
+      //TODO à tester : 80 25 0D F4 01 17 9C 54 00 04 A0 29 00 01 02 00 48 (msg de 17 de longles 2 à la fin ???)
       bool sat1=byteArr[1] == 0x08;
-        
+
       // Extract bytes 16 and 17
-      int decimalValueTemp = byteArr[15] << 8 | byteArr[16];
-      float temperatureValue = decimalValueTemp / 10.0;
+      int value = byteArr[15] << 8 | byteArr[16];
+      float temperatureValue = value / 10.0;
+
       // Extract bytes 18 and 19
-      int decimalValueCons = byteArr[17] << 8 | byteArr[18];
-      float temperatureconsValue = decimalValueCons / 10.0;
+      value = byteArr[17] << 8 | byteArr[18];
+      float temperatureconsValue = value / 10.0;
+
       // Publish temperature to the "frisquet_temperature" MQTT topic
       char temperaturePayload[10];
       snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
@@ -1069,6 +1083,21 @@ void handleRadioPacket(byte *byteArr, int len)
       char tempconsignePayload[10];
       snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
       publishMessage(sat1 ? TEMP_CONSIGNE1_TOPIC : TEMP_CONSIGNE2_TOPIC, tempconsignePayload);
+    }
+
+    //Message de la chaudière vers la/les sondes
+
+    //TODO changer ici sensorTempExt
+    else if (len == 49) {
+      // Extract bytes 7 et 8
+      int value = byteArr[7] << 8 | byteArr[8];
+      float temperatureExtValue = value / 10.0;
+
+      char temperaturePayload[10];
+      snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureExtValue);
+
+      tempExterieure = String(temperaturePayload);
+      tempExterieureChanged=true;
     }
   }
   int pos = 0;
@@ -1100,7 +1129,7 @@ void handleRadioPacket(byte *byteArr, int len)
   {
     DBG_PRINTLN(F("Failed to publish Payload to MQTT"));
   }
-  DBG_PRINTLN(F(""));
+  DBG_PRINTLN(message);
 }
 //****************************************************************************
 void loop()
