@@ -172,18 +172,13 @@ void updateDisplay()
   if (tempAmbianteChanged || tempExterieureChanged || tempConsigneChanged || modeFrisquetChanged || tempAmbiante2Changed || tempConsigne2Changed || modeFrisquet2Changed)
   {
     Heltec.display->clear();
-    Heltec.display->drawString(0, 0, "NetID: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)));
-    Heltec.display->drawString(0, 11, "SonID: " + byteArrayToHexString(&custom_extSon_id, 1) + " ConID: " + byteArrayToHexString(&custom_friCon_id, 1));
-    Heltec.display->drawString(0, 22, "T° Am1: " + tempAmbiante + "°C " + "T° Ex: " + tempExterieure + "°C");
-    Heltec.display->drawString(0, 33, "T° Co1: " + tempConsigne + "°C" + "Mode: " + modeFrisquet);
+    Heltec.display->drawString(0, 0, "Net: " + byteArrayToHexString(custom_network_id, sizeof(custom_network_id)) + " Ext: " + byteArrayToHexString(&custom_extSon_id, 1));
+    Heltec.display->drawString(0, 11, "ConID: " + byteArrayToHexString(&custom_friCon_id, 1) + " T° ext : " + tempExterieure + "°C");
+    Heltec.display->drawString(0, 22, "Z1 Amb: " + tempAmbiante + "°C Cons: " + tempConsigne + "°C");
+    Heltec.display->drawString(0, 33, "Mode: " + modeFrisquet);
 
     if(sensorZ2) {
-      Heltec.display->drawString(0, 44, "T° Am2: " + tempAmbiante2 + "°C");
-      Heltec.display->drawString(0, 55, "T° Co2: " + tempConsigne2 + "°C");
-
-    tempAmbiante2Changed = false;
-    tempConsigne2Changed = false;
-    modeFrisquet2Changed = false;
+      Heltec.display->drawString(0, 44, "Z2 Amb: " + tempAmbiante2 + "°C Cons: " + tempConsigne2 + "°C");
     }
 
     Heltec.display->display();
@@ -191,6 +186,9 @@ void updateDisplay()
     tempExterieureChanged = false;
     tempConsigneChanged = false;
     modeFrisquetChanged = false;
+    tempAmbiante2Changed = false;
+    tempConsigne2Changed = false;
+    modeFrisquet2Changed = false;
 
   }
   else if (assSonFrisquetChanged || assConFrisquetChanged)
@@ -323,17 +321,17 @@ void callback(char *topic, byte *payload, unsigned int length)
   else if (strcmp(topic, TEMP_EXTERIEURE_TOPIC) == 0)
   {
 
-    //TODO changer ici
-    //sensorTempExt
-
-    if (tempExterieure != String(message))
-    {
+    if (tempExterieure != String(message)) {
       tempExterieure = String(message);
-      extSonVal = tempExterieure.toFloat() * 10;
-      int extSonTemp = int(extSonVal);
-      extSonTempBytes[0] = (extSonTemp >> 8) & 0xFF; // Octet de poids fort
-      extSonTempBytes[1] = extSonTemp & 0xFF;        // Octet de poids faible
       tempExterieureChanged = true;
+      
+      //Si la sonde externe est émulée, envoi la température à la chaudière
+      if (!sensorTempExt) {
+        extSonVal = tempExterieure.toFloat() * 10;
+        int extSonTemp = int(extSonVal);
+        extSonTempBytes[0] = (extSonTemp >> 8) & 0xFF; // Octet de poids fort
+        extSonTempBytes[1] = extSonTemp & 0xFF;        // Octet de poids faible
+      }
     }
   }
   else if (strcmp(topic, TEMP_CONSIGNE1_TOPIC) == 0)
@@ -960,20 +958,20 @@ void handleRadioPacket(byte *byteArr, int len)
           int decimalValue1 = byteArr[7] << 8 | byteArr[8];
           float ecsValue = decimalValue1 / 10.0;
           char tempECS[10];
-          snprintf(tempECS, sizeof(tempECS), "%.2f", ecsValue);
+          snprintf(tempECS, sizeof(tempECS), "%.1f", ecsValue);
           publishMessage("homeassistant/sensor/frisquet/tempECS/state", tempECS);
         }
         // Extract bytes 10 and 11 CDC
         int decimalValue2 = byteArr[9] << 8 | byteArr[10];
         float cdcValue = decimalValue2 / 10.0;
         char tempCDC[10];
-        snprintf(tempCDC, sizeof(tempCDC), "%.2f", cdcValue);
+        snprintf(tempCDC, sizeof(tempCDC), "%.1f", cdcValue);
         publishMessage("homeassistant/sensor/frisquet/tempCDC/state", tempCDC);
         // Extract bytes 12 and 13 Départ
         int decimalValue3 = byteArr[11] << 8 | byteArr[12];
         float departValue = decimalValue3 / 10.0;
         char tempDEP[10];
-        snprintf(tempDEP, sizeof(tempDEP), "%.2f", departValue);
+        snprintf(tempDEP, sizeof(tempDEP), "%.1f", departValue);
         publishMessage("homeassistant/sensor/frisquet/tempDepart/state", tempDEP);
         // Extract bytes 44 and 45 temp ambiante
         int decimalValueTemp = byteArr[43] << 8 | byteArr[44];
@@ -985,7 +983,7 @@ void handleRadioPacket(byte *byteArr, int len)
         int decimalValueCons = byteArr[55] << 8 | byteArr[56];
         float temperatureconsValue = decimalValueCons / 10.0;
         char tempconsignePayload[10];
-        snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
+        snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.1f", temperatureconsValue);
         publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg7a18 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
@@ -1077,27 +1075,27 @@ void handleRadioPacket(byte *byteArr, int len)
 
       // Publish temperature to the "frisquet_temperature" MQTT topic
       char temperaturePayload[10];
-      snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureValue);
+      snprintf(temperaturePayload, sizeof(temperaturePayload), "%.1f", temperatureValue);
       publishMessage(sat1 ? TEMP_AMBIANTE1_TOPIC : TEMP_AMBIANTE2_TOPIC, temperaturePayload);
       // Publish temperature to the "tempconsigne" MQTT topic
       char tempconsignePayload[10];
-      snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.2f", temperatureconsValue);
+      snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.1f", temperatureconsValue);
       publishMessage(sat1 ? TEMP_CONSIGNE1_TOPIC : TEMP_CONSIGNE2_TOPIC, tempconsignePayload);
     }
 
     //Message de la chaudière vers la/les sondes
-
-    //TODO changer ici sensorTempExt
     else if (len == 49) {
-      // Extract bytes 7 et 8
-      int value = byteArr[7] << 8 | byteArr[8];
-      float temperatureExtValue = value / 10.0;
 
-      char temperaturePayload[10];
-      snprintf(temperaturePayload, sizeof(temperaturePayload), "%.2f", temperatureExtValue);
+      if (sensorTempExt) {
+        // Extract bytes 7 et 8 : temp ext
+        int value = byteArr[7] << 8 | byteArr[8];
+        float temperatureExtValue = value / 10.0;
+  
+        char temperaturePayload[10];
+        snprintf(temperaturePayload, sizeof(temperaturePayload), "%.1f", temperatureExtValue);
+        publishMessage(TEMP_EXTERIEURE_TOPIC, temperaturePayload);
 
-      tempExterieure = String(temperaturePayload);
-      tempExterieureChanged=true;
+      }
     }
   }
   int pos = 0;
