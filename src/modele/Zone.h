@@ -18,7 +18,7 @@ class Zone {
         Zone(byte, String);
 
         /* identifiant de la zone */
-        byte getgid() const { return idZone; };
+        byte getId() const { return idZone; };
         String getNom() const { return nom ; };
 
         /* Température de consigne */
@@ -33,9 +33,6 @@ class Zone {
         uint8_t getMode() const { return mode; }
         void setMode (uint8_t valeur);
         
-        /* indique si une mise à jour a été faite sur la zone */
-        bool isMiseAJour();
-        
         //TODO ajouter le constructeur qui prend en param un ID de zone
         
     private:
@@ -44,13 +41,8 @@ class Zone {
         String nom;
 
         uint8_t tempConsigne;
-        bool tempConsigneMaj;
-
         uint8_t tempAmbiance;
-        bool tempAmbianceMaj;
-
         uint8_t mode;
-        bool modeMaj;
 };
 
 #endif //__ZONE_H_

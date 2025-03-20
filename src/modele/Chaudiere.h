@@ -17,16 +17,14 @@ class Chaudiere {
         /* températur extérieure */
         void setTempExterieure(int value);
 
-        /* indique si une mise à jour a été faite sur la chaudiere */
-        bool isMiseAJour();
-
     private:
         Zone *zone1;
         Zone *zone2;
         Zone *zone3;
 
         uint8_t tempExterieure;
-        bool tempExterieurMaj;
+
+        Zone* getZoneById(int zoneId);
 };
 
 #endif  //__CHAUDIERE_H_

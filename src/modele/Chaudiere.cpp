@@ -16,13 +16,18 @@ Chaudiere::Chaudiere() {
 void Chaudiere::setTempExterieure(int value) {
     if (value != tempExterieure) {
         tempExterieure = value;
-        tempExterieurMaj = true;
     }
 }
 
-bool Chaudiere::isMiseAJour() {
-    return ((zone1 == nullptr) ? false : zone1->isMiseAJour())
-             && ((zone2 == nullptr) ? false : zone2->isMiseAJour())
-             && ((zone3 == nullptr) ? false : zone3->isMiseAJour())
-             && tempExterieurMaj;
+Zone* Chaudiere::getZoneById(int zoneId) {
+    if (zone1 != nullptr && zone1->getId() == zoneId) {
+        return zone1;
+    }
+    if (zone2 != nullptr && zone2->getId() == zoneId) {
+        return zone2;
+    }
+    if (zone3 != nullptr && zone3->getId() == zoneId) {
+        return zone3;
+    }
+    return nullptr;
 }
