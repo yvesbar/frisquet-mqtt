@@ -151,20 +151,32 @@ void Mqtt::deployConfHAChaudiere() {
     ss.str("");
 
 
-   //Publication de la consommation de gaz pour l'eau chaude sanitaire
-  if (ECS_ACTIF == true) { 
+    //Publication de la consommation de gaz pour l'eau chaude sanitaire
+    if (ECS_ACTIF == true) { 
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_consogaz-ecs\",";
+        ss << "\"name\": \"Frisquet - consommation gaz eau chaude sanitaire\",";
+        ss << "\"state_topic\": \"" << getConsoGazECSTopic() << "\",";
+        ss << "\"unit_of_measurement\": \"kWh\",";
+        ss << "\"device_class\": \"energy\",";
+        ss << "\"state_class\": \"total_increasing\",";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
+        ss.str("");
+    }
+
+    // Publication de la température du corps de chauffe
     ss << "{";
-    ss << "\"uniq_id\": \"frisquet_consogaz-ecs\",";
-    ss << "\"name\": \"Frisquet - consommation gaz eau chaude sanitaire\",";
-    ss << "\"state_topic\": \"" << getConsoGazECSTopic() << "\",";
-    ss << "\"unit_of_measurement\": \"kWh\",";
-    ss << "\"device_class\": \"energy\",";
-    ss << "\"state_class\": \"total_increasing\",";
+    ss << "\"uniq_id\": \"frisquet_tempCorpsDeChauffe\",";
+    ss << "\"name\": \"Frisquet - Température corps de chauffe\",";
+    ss << "\"state_topic\": \"" << getTempCorpsDeChauffeTopic() << "\",";
+    ss << "\"unit_of_measurement\": \"°C\",";
+    ss << "\"device_class\": \"temperature\",";
     ss << MQTT_HA_DEVICE_ID;
     ss << "}";
-    client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
+    client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "tempCorpsDeChauffe/config").c_str(), ss.str().c_str());
     ss.str("");
-  }
 
   DEBUGLN(F("MQTT - -deployConfHAChaudiere"));
 }
@@ -220,4 +232,8 @@ String Mqtt::getConsoGazChauffageTopic() {
 
 String Mqtt::getConsoGazECSTopic() {
     return mqttRootNode + "/consogaz-ecs/state";
+}
+
+String Mqtt::getTempCorpsDeChauffeTopic() {
+    return mqttRootNode + "/tempCorpsDeChauffe/state";
 }

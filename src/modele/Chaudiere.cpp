@@ -13,9 +13,15 @@ Chaudiere::Chaudiere() {
 }
 
 
-void Chaudiere::setTempExterieure(int value) {
+void Chaudiere::setTempExterieure(uint8_t value) {
     if (value != tempExterieure) {
         tempExterieure = value;
+    }
+}
+
+void Chaudiere::setTempCorpsDeChauffe(uint8_t value) {
+    if (value != tempCorpsDeChauffe) {
+        tempCorpsDeChauffe = value;
     }
 }
 

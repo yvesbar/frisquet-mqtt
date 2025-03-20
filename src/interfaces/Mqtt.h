@@ -50,6 +50,7 @@ class Mqtt {
         String getZoneTempExterieurTopic();
         String getConsoGazChauffageTopic();
         String getConsoGazECSTopic();
+        String getTempCorpsDeChauffeTopic();
 };
 
 #endif  //__MQTT_H_

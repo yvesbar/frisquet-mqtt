@@ -406,6 +406,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   }
 }
 //****************************************************************************
+//YBA Migré
 void connectToMqtt()
 {
   if (!client.connected())
@@ -430,6 +431,7 @@ void connectToMqtt()
   }
 }
 //****************************************************************************
+//YBA Migré
 void connectToSensor(const char *topic, const char *name)
 {
   char configTopic[60];
@@ -471,9 +473,9 @@ void connectToSwitch(const char *topic, const char *name)
 //****************************************************************************
 void connectToTopic()
 {
-  connectToSensor("tempAmbiante1", "ambiante Z1");
-  connectToSensor("tempExterieure", "exterieure");
-  connectToSensor("tempConsigne1", "consigne Z1");
+  connectToSensor("tempAmbiante1", "ambiante Z1"); // YBA migré
+  connectToSensor("tempExterieure", "exterieure"); // YBA migré
+  connectToSensor("tempConsigne1", "consigne Z1"); // YBA migré
   connectToSensor("tempCDC", "corps de chauffe");
   
   connectToSensor("tempDepart", "depart");
