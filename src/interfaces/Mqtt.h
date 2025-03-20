@@ -11,15 +11,11 @@
 #include "../debug.h"
 #include "../TSQueue.h"
 #include "config.h"
+#include "modele/Chaudiere.h"
 #include "MqttPublishEvent.h"
 
 
 #define MQTT_HA_DEVICE_ID "\"device\":{\"ids\":[\"FrisquetConnect\"],\"mf\":\"Frisquet\",\"name\":\"Frisquet Connect\",\"mdl\":\"Frisquet Connect\"}"
-#define MQTT_ZONE1 "zone1"
-#define MQTT_ZONE2 "zone2"
-
-
-
 
 using namespace std;
 
@@ -29,18 +25,18 @@ class Mqtt {
         void init();
 
         //Permet de déployer la configuration d'auto conf HA
-        void deployConfHA();
+        void deployAutoDiscoveryHA(Chaudiere*);
 
         //Stock un évènement pour le publiquer plus tard
-        void publishAsync(string topic, string value);
+        void publishAsync(String topic, String value);
 
         //Publication des évènements en attente
         void publishEvents();
 
 
     private:
-        static const string MQTT_HA_TOPIC_SENSOR;
-        static const string MQTT_HA_TOPIC_SELECT;
+        static const String MQTT_HA_TOPIC_SENSOR;
+        static const String MQTT_HA_TOPIC_SELECT;
         
         PubSubClient* client;
         bool configHADeployed = false;
@@ -48,9 +44,12 @@ class Mqtt {
 
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
-        void deployConfHAZone(string nomZoneMqtt);
-        string getZoneTempConsigneTopic(string nomZoneMqtt);
-        string getZoneTempAmbianteTopic(string nomZoneMqtt);
+        void deployConfHAZone(Zone* zone);
+        String getZoneTempConsigneTopic(String nomZoneMqtt);
+        String getZoneTempAmbianteTopic(String nomZoneMqtt);
+        String getZoneTempExterieurTopic();
+        String getConsoGazChauffageTopic();
+        String getConsoGazECSTopic();
 };
 
 #endif  //__MQTT_H_

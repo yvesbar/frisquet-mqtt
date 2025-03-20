@@ -1,8 +1,8 @@
 #include "Mqtt.h"
 
 //Déclaration des constantes
-const string Mqtt::MQTT_HA_TOPIC_SENSOR = "homeassistant/sensor/frisquet/";
-const string Mqtt::MQTT_HA_TOPIC_SELECT = "homeassistant/select/frisquet/";
+const String Mqtt::MQTT_HA_TOPIC_SENSOR = "homeassistant/sensor/frisquet/";
+const String Mqtt::MQTT_HA_TOPIC_SELECT = "homeassistant/select/frisquet/";
 
 Mqtt::Mqtt() {
     WiFiClient* wifi = new WiFiClient();
@@ -36,110 +36,143 @@ void Mqtt::init() {
 /**
  * Permet de déployer les messages/topics necessaires pour la configuration automatique des devices dans HomeAssistant
 */
-void Mqtt::deployConfHA() {
+void Mqtt::deployAutoDiscoveryHA(Chaudiere* chaudiere) {
     if (!configHADeployed) {
-        DEBUGLN(F("MQTT - +deployConfHA"));
+        DEBUGLN(F("MQTT - +deployAutoDiscoveryHA"));
         configHADeployed = true;
 
-        deployConfHAChaudiere();
+        deployConfHAZone(chaudiere->getZone1());
+        deployConfHAZone(chaudiere->getZone2());
+        deployConfHAZone(chaudiere->getZone3());
+        
+        //TODO à tester
         deployConfHAtempExt();
-        deployConfHAZone(MQTT_ZONE1);
-        deployConfHAZone(MQTT_ZONE2);
-        DEBUGLN(F("MQTT - -deployConfHA"));
-    }
+        
+        //TODO à tester :
+        deployConfHAChaudiere();
 
+        DEBUGLN(F("MQTT - -deployAutoDiscoveryHA"));
+    }
 }
 
+/**
+* Déploie la confi HA nécessair pour l'auto-configuration d'une zone
+*/
+void Mqtt::deployConfHAZone(Zone* zone) {
+    
+    //Seulement si la zone est définie
+    if (zone) {
+        DEBUGLN(F("MQTT - +deployConfHAZone"));
+        stringstream ss;
+    
+        // Configuration du capteur de température ambiante
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_" << zone->getNom().c_str() << "_tempAmbiante\",";
+        ss << "\"name\": \"Frisquet - " << zone->getNom().c_str() << " - Temperature ambiante\",";
+        ss << "\"state_topic\": \"" << getZoneTempAmbianteTopic(zone->getNom()) << "\",";
+        ss << "\"unit_of_measurement\": \"°C\",";
+        ss << "\"device_class\": \"temperature\",";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((MQTT_HA_TOPIC_SENSOR + zone->getNom().c_str() + "/tempAmbiante/config").c_str(), ss.str().c_str());
+        ss.str("");
+    
+        // Configuration du capteur de consigne
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_" << zone->getNom().c_str() << "_tempConsigne\",";
+        ss << "\"name\": \"Frisquet - " << zone->getNom().c_str() << " Temperature consigne\",";
+        ss << "\"state_topic\": \"" << getZoneTempConsigneTopic(zone->getNom()) << "\",";
+        ss << "\"unit_of_measurement\": \"°C\",";
+        ss << "\"device_class\": \"temperature\",";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((MQTT_HA_TOPIC_SENSOR + zone->getNom() + "/tempConsigne/config").c_str(), ss.str().c_str());
+        ss.str("");
+    
+        // Configuration du mode
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_" << zone->getNom().c_str() << "_mode\",";
+        ss << "\"name\": \"Frisquet - " << zone->getNom().c_str() << " mode\",";
+        ss << "\"state_topic\": \"" << mqttRootNode << "/" << zone->getNom().c_str() << "/mode/state\",";
+        ss << "\"command_topic\": \"" << mqttRootNode << "/" << zone->getNom().c_str() << "/mode/set\",";
+        ss << "\"options\": [\"Auto\", \"Confort\", \"Réduit\", \"Hors gel\"],";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((MQTT_HA_TOPIC_SELECT + zone->getNom() + "/mode/config").c_str(), ss.str().c_str(), true);
+        ss.str("");
+    
+        DEBUGLN(F("MQTT - -deployConfHAZone"));
+    }
+}
 
 /**
 * Déploie la Configuration MQTT pour HA pour le capteur de température extérieure
 */
 void Mqtt::deployConfHAtempExt() {
     DEBUGLN(F("MQTT - +deployConfHAtempExt"));
-    stringstream ss;
-
-    //TODO a tester
-
-    // Configuration du capteur de température ambiante
-    ss << "{";
-    ss << "\"uniq_id\": \"frisquet_tempExterieure\",";
-    ss << "\"name\": \"Frisquet - Temperature extérieure\",";
-    ss << "\"state_topic\": \"frisquet/tempExterieure/state\",";
-    ss << "\"unit_of_measurement\": \"°C\",";
-    ss << "\"device_class\": \"temperature\",";
-    ss << MQTT_HA_DEVICE_ID;
-    ss << "}";
     
-    client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "tempExterieure/config").c_str(), ss.str().c_str());
+
+    //FIXME ajouter le canal "set" si sonde émulé
+    if (TEMP_EXTERIEUR_PHYSIQUE_ACTIF) {
+        stringstream ss;
+
+        // Configuration du capteur de température ambiante
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_tempExterieure\",";
+        ss << "\"name\": \"Frisquet - Temperature extérieure\",";
+        ss << "\"state_topic\": \"" << getZoneTempExterieurTopic() << "\",";
+        ss << "\"unit_of_measurement\": \"°C\",";
+        ss << "\"device_class\": \"temperature\",";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "tempExterieure/config").c_str(), ss.str().c_str());
+        ss.str("");
+    }
 
     DEBUGLN(F("MQTT - -deployConfHAtempExt"));
 }
 
 
-
 void Mqtt::deployConfHAChaudiere() {
-    //TODO publier la config pour les données iternes (CDC...)
-
-}
-
-
-/**
-* Déploie la confi HA nécessair pour l'auto-configuration d'une zone
-*/
-void Mqtt::deployConfHAZone(string nomZoneMqtt) {
-    DEBUGLN(F("MQTT - +deployConfHAZone"));
+    DEBUGLN(F("MQTT - +deployConfHAChaudiere"));
     stringstream ss;
 
-    //TODO a tester
-
-    // Configuration du capteur de température ambiante
+    //Publication de la consommation de gaz pour le chauffage
     ss << "{";
-    ss << "\"uniq_id\": \"frisquet_" << nomZoneMqtt << "_tempAmbiante\",";
-    ss << "\"name\": \"Frisquet - " << nomZoneMqtt << " Temperature ambiante\",";
-    ss << "\"state_topic\": \"" << getZoneTempAmbianteTopic(nomZoneMqtt) << "\",";
-    ss << "\"unit_of_measurement\": \"°C\",";
-    ss << "\"device_class\": \"temperature\",";
+    ss << "\"uniq_id\": \"frisquet_consogaz-ch\",";
+    ss << "\"name\": \"Frisquet - consommation gaz chauffage\",";
+    ss << "\"state_topic\": \"" << getConsoGazChauffageTopic() << "\",";
+    ss << "\"unit_of_measurement\": \"kWh\",";
+    ss << "\"device_class\": \"energy\",";
+    ss << "\"state_class\": \"total_increasing\",";
     ss << MQTT_HA_DEVICE_ID;
     ss << "}";
-    
-    client->publish((MQTT_HA_TOPIC_SENSOR + nomZoneMqtt + "/tempAmbiante/config").c_str(), ss.str().c_str());
+    client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "consogaz-ch/config").c_str(), ss.str().c_str());
+    ss.str("");
 
-    ss.clear();
 
-    // Configuration du capteur de consigne
+   //Publication de la consommation de gaz pour l'eau chaude sanitaire
+  if (ECS_ACTIF == true) { 
     ss << "{";
-    ss << "\"uniq_id\": \"frisquet_" << nomZoneMqtt << "_tempConsigne\",";
-    ss << "\"name\": \"Frisquet - " << nomZoneMqtt << " Temperature consigne\",";
-    ss << "\"state_topic\": \"" << getZoneTempConsigneTopic(nomZoneMqtt) << "\",";
-    ss << "\"unit_of_measurement\": \"°C\",";
-    ss << "\"device_class\": \"temperature\",";
+    ss << "\"uniq_id\": \"frisquet_consogaz-ecs\",";
+    ss << "\"name\": \"Frisquet - consommation gaz eau chaude sanitaire\",";
+    ss << "\"state_topic\": \"" << getConsoGazECSTopic() << "\",";
+    ss << "\"unit_of_measurement\": \"kWh\",";
+    ss << "\"device_class\": \"energy\",";
+    ss << "\"state_class\": \"total_increasing\",";
     ss << MQTT_HA_DEVICE_ID;
     ss << "}";
-    
-    client->publish((MQTT_HA_TOPIC_SENSOR + nomZoneMqtt + "/tempConsigne/config").c_str(), ss.str().c_str());
+    client->publish((Mqtt::MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
+    ss.str("");
+  }
 
-    ss.clear();
-
-    // Configuration du mode
-    ss << "{";
-    ss << "\"uniq_id\": \"frisquet_" << nomZoneMqtt << "_mode\",";
-    ss << "\"name\": \"Frisquet - " << nomZoneMqtt << " mode\",";
-    ss << "\"state_topic\": \"frisquet/" << nomZoneMqtt << "/mode/state\",";
-    ss << "\"command_topic\": \"frisquet/" << nomZoneMqtt << "/mode/set\",";
-    ss << "\"options\": [\"Auto\", \"Confort\", \"Réduit\", \"Hors gel\"],";
-    ss << MQTT_HA_DEVICE_ID;
-    ss << "}";
-
-    client->publish((MQTT_HA_TOPIC_SELECT + nomZoneMqtt + "/mode/config").c_str(), ss.str().c_str(), true);
-
-    ss.clear();
-
-    DEBUGLN(F("MQTT - -deployConfHAZone"));
+  DEBUGLN(F("MQTT - -deployConfHAChaudiere"));
 }
 
 
-void Mqtt::publishAsync(string topic, string value) {
-    mqttPublishQueue->push(MqttPublishEvent(topic, value));
+void Mqtt::publishAsync(String topic, String value) {
+    //FIXME A implémenter lors de l'utilisation des 2 coeurs du heltec
+    //mqttPublishQueue->push(MqttPublishEvent(topic, value));
 }
 
 
@@ -169,10 +202,22 @@ void Mqtt::publishEvents() {
     DEBUGLN(F("MQTT - -publishZone"));
 }*/
 
-string Mqtt::getZoneTempConsigneTopic(string nomZoneMqtt) {
-    return "frisquet/" + nomZoneMqtt + "/tempConsigne/state";
+String Mqtt::getZoneTempConsigneTopic(String nomZoneMqtt) {
+    return mqttRootNode + "/" +  nomZoneMqtt + "/tempConsigne/state";
 }
 
-string Mqtt::getZoneTempAmbianteTopic(string nomZoneMqtt) {
-    return "frisquet/" + nomZoneMqtt + "/tempAmbiante/state";
+String Mqtt::getZoneTempAmbianteTopic(String nomZoneMqtt) {
+    return  mqttRootNode + "/" + nomZoneMqtt + "/tempAmbiante/state";
+}
+
+String Mqtt::getZoneTempExterieurTopic() {
+    return mqttRootNode + "/tempExterieure/state";
+}
+
+String Mqtt::getConsoGazChauffageTopic() {
+    return mqttRootNode + "/consogaz-ch/state";
+}
+
+String Mqtt::getConsoGazECSTopic() {
+    return mqttRootNode + "/consogaz-ecs/state";
 }

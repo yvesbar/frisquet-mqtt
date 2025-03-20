@@ -5,9 +5,11 @@
 #include <heltec.h>
 #include <Preferences.h>
 
-#include "interfaces/Mqtt.h" 
+#include "interfaces/Mqtt.h"
+#include "modele/Chaudiere.h"
 
 Mqtt * mqtt;
+Chaudiere* frisquet;
 
 void setup() {
     DEBUG_INIT
@@ -20,14 +22,17 @@ void setup() {
         ESP.restart();
     }
 
+    frisquet = new Chaudiere();
+
+    //TODO ajouter le connecte (si présent)
+    //TODO ajouter la sonde externe (si présent)
+
     mqtt = new Mqtt();
     mqtt->init();
 }
 
 void loop() {
-    mqtt->deployConfHA();
+    mqtt->deployAutoDiscoveryHA(frisquet);
 
-
-
-
+    
 }
