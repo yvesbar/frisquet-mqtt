@@ -61,7 +61,7 @@ void Mqtt::deployAutoDiscoveryHA(Chaudiere* chaudiere) {
 void Mqtt::deployConfHAZone(Zone* zone) {
     
     //Seulement si la zone est définie
-    if (zone) {
+    if (zone != nullptr) {
         DEBUGLN(F("MQTT - +deployConfHAZone"));
         stringstream ss;
     

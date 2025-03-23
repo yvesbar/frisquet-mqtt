@@ -32,7 +32,7 @@ volatile bool receivedFlag = false;
 #define BUSY_LoRa GPIO_NUM_13
 #define DIO0 GPIO_NUM_14
 
-SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
+//SX1262 radio = new Module(SS, DIO0, RST_LoRa, BUSY_LoRa);
 Preferences preferences;
 unsigned long lastTxExtSonTime = 30000;        // Variable dernière transmission sonde ajout de 30 sec d'intervale pour ne pas envoyé en meme temps que le connect
 const unsigned long txExtSonInterval = 600000; // Interval de transmission en millisecondes (10 minutes)
@@ -832,69 +832,28 @@ void initOTA()
 }
 //****************************************************************************
 void setFlag(void)
+//YBA Migré
 {
-  // we got a packet, set the flag
+ // we got a packet, set the flag
   receivedFlag = true;
 }
 //****************************************************************************
 void setup()
 {
   Serial.begin(115200);
-  DBG_PRINTLN(F("Booting"));
-  WiFi.mode(WIFI_STA);
-  WiFi.setHostname("ESP32Frisquet");
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED)
-  {
-    DBG_PRINTLN(F("Connection Failed! Rebooting..."));
-    delay(5000);
-    ESP.restart();
-  }
-
+ 
   initNvs(); // écrit dans la nvs les bytes nécéssaires
 
-  // Initialize OLED display
-  Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
-  Heltec.display->init();
-  // Heltec.display->flipScreenVertically();
-  Heltec.display->setFont(ArialMT_Plain_10);
-  Heltec.display->clear();
-  Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
-  Heltec.display->display();
-
+  
   initOTA();
-  DBG_PRINTLN(F("Ready"));
-  DBG_PRINT(F("IP address: "));
-  DBG_PRINTLN(WiFi.localIP());
+
   // Initialisation de la connexion MQTT
-  client.setServer(mqttServer, mqttPort);
-  client.setBufferSize(2048);
+
   connectToMqtt();
   connectToTopic();
   client.setCallback(callback);
 
-  // set the function that will be called
-  // when new packet is received
-  radio.setPacketReceivedAction(setFlag);
-  // start listening for Radio packets
-  int state = radio.beginFSK();
-  state = radio.setFrequency(868.96);
-  state = radio.setBitRate(25.0);
-  state = radio.setFrequencyDeviation(50.0);
-  state = radio.setRxBandwidth(250.0);
-  state = radio.setPreambleLength(4);
-  state = radio.setSyncWord(custom_network_id, sizeof(custom_network_id));
-  DBG_PRINT(F("[SX1262] Starting to listen ... "));
-  state = radio.startReceive();
-  if (state == RADIOLIB_ERR_NONE)
-  {
-    DBG_PRINTLN(F("success!"));
-  }
-  else
-  {
-    DBG_PRINT(F("failed, code "));
-    DBG_PRINTLN(state);
-  }
+  
 
   preferences.end(); // Fermez la mémoire NVS ici
 }

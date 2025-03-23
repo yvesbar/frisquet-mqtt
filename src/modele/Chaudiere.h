@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include "Zone.h"
 #include "config.h"
+#include "../debug.h"
 
 /*
     Classe représentant la chaudière frisquet
@@ -22,9 +23,9 @@ class Chaudiere {
         void setTempCorpsDeChauffe(uint8_t value);
 
     private:
-        Zone *zone1;
-        Zone *zone2;
-        Zone *zone3;
+        Zone *zone1 = nullptr;
+        Zone *zone2 = nullptr;
+        Zone *zone3 = nullptr;
 
         uint8_t tempExterieure;
         uint8_t tempCorpsDeChauffe;
