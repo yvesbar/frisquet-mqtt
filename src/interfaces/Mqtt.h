@@ -23,6 +23,7 @@ class Mqtt {
     public:
         Mqtt();
         void init();
+        void loop(); // Gère les tâches MQTT en continu
 
         //Permet de déployer la configuration d'auto conf HA
         void deployAutoDiscoveryHA(Chaudiere*);
@@ -40,6 +41,8 @@ class Mqtt {
         
         PubSubClient* client;
         bool configHADeployed = false;
+
+        //TODO a utiliser plus tard quand on utilisera les 2 coeurs du heltec
         TSQueue<MqttPublishEvent>* mqttPublishQueue;
 
         void deployConfHAChaudiere();

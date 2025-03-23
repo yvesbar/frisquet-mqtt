@@ -237,3 +237,13 @@ String Mqtt::getConsoGazECSTopic() {
 String Mqtt::getTempCorpsDeChauffeTopic() {
     return mqttRootNode + "/tempCorpsDeChauffe/state";
 }
+
+void Mqtt::loop() {
+    DEBUGLN(F("MQTT - +loop"));
+    if (!client->connected()) {
+        DEBUGLN(F("MQTT - Client déconnecté, tentative de reconnexion..."));
+        init(); // Réinitialise la connexion MQTT si déconnecté
+    }
+    client->loop(); // Appelle la boucle MQTT pour gérer les messages entrants et sortants
+    DEBUGLN(F("MQTT - -loop"));
+}
