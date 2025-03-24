@@ -1,5 +1,5 @@
-#ifndef __MQTT_H_
-#define __MQTT_H_
+#ifndef __MQTT_PUB_H_
+#define __MQTT_PUB_H_
 
 #include <Arduino.h>
 #include <PubSubClient.h>
@@ -7,21 +7,21 @@
 #include <string>
 #include <sstream>
 #include <queue>
+#include "MqttPublishEvent.h"
 
+#include "config.h"
 #include "../debug.h"
 #include "../TSQueue.h"
-#include "config.h"
-#include "modele/Chaudiere.h"
-#include "MqttPublishEvent.h"
+#include "../modele/Chaudiere.h"
 
 
 #define MQTT_HA_DEVICE_ID "\"device\":{\"ids\":[\"FrisquetConnect\"],\"mf\":\"Frisquet\",\"name\":\"Frisquet Connect\",\"mdl\":\"Frisquet Connect\"}"
 
 using namespace std;
 
-class Mqtt {
+class MqttPub {
     public:
-        Mqtt();
+        MqttPub();
         void init();
         void loop(); // Gère les tâches MQTT en continu
 
@@ -29,11 +29,15 @@ class Mqtt {
         void deployAutoDiscoveryHA(Chaudiere*);
 
         //Stock un évènement pour le publiquer plus tard
-        void publishAsync(String topic, String value);
+        //void publishAsync(String topic, String value);
 
         //Publication des évènements en attente
-        void publishEvents();
-
+        //void publishEvents();
+        void deployConfHAZone(Zone* zone);
+        PubSubClient* getClient(); // Ajout de la méthode getClient
+        void publishTempAmbiante(Zone* zone, float temperature); // Publie la température ambiante
+        void publishTempConsigne(Zone* zone, float temperature); // Publie la température de consigne
+        void publishTempExterieure(float temperature); // Publie la température extérieure
 
     private:
         static const String MQTT_HA_TOPIC_SENSOR;
@@ -47,7 +51,6 @@ class Mqtt {
 
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
-        void deployConfHAZone(Zone* zone);
         String getZoneTempConsigneTopic(String nomZoneMqtt);
         String getZoneTempAmbianteTopic(String nomZoneMqtt);
         String getZoneTempExterieurTopic();
@@ -56,4 +59,4 @@ class Mqtt {
         String getTempCorpsDeChauffeTopic();
 };
 
-#endif  //__MQTT_H_
+#endif  //__MQTT_PUB_H_

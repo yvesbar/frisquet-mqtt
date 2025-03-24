@@ -7,6 +7,7 @@
 
 #include <Arduino.h>
 #include <string>
+#include "../debug.h"
 
 class Zone {
     public:
@@ -22,16 +23,16 @@ class Zone {
         String getNom() const { return nom ; };
 
         /* Température de consigne */
-        uint8_t getTempConsigne() const { return tempConsigne; }
-        void setTempConsigne(uint8_t valeur);
+        float getTempConsigne() const { return tempConsigne; }
+        void setTempConsigne(float valeur);
         
         /* Température d'Ambiance */
-        uint8_t getTempAmbiance() const { return tempAmbiance; }
-        void setTempAmbiance(uint8_t valeur);
+        float getTempAmbiance() const { return tempAmbiance; }
+        void setTempAmbiance(float valeur);
         
         /* Mode */
-        uint8_t getMode() const { return mode; }
-        void setMode (uint8_t valeur);
+        float getMode() const { return mode; }
+        void setMode (float valeur);
         
         //TODO ajouter le constructeur qui prend en param un ID de zone
         
@@ -40,8 +41,8 @@ class Zone {
         byte idZone;
         String nom;
 
-        uint8_t tempConsigne;
-        uint8_t tempAmbiance;
+        float tempConsigne;
+        float tempAmbiance;
         uint8_t mode;
 };
 

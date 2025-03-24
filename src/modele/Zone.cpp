@@ -1,25 +1,37 @@
 #include "Zone.h"
 
-
-Zone::Zone(byte id, String nomZ) {
+Zone::Zone(byte id, String nomZone) {
+    DEBUGLN(F("Zone - +Constructeur"));
     idZone = id;
-    nom = nomZ;
+    nom = nomZone;
+
+    DEBUGLN(F("Zone - -Constructeur"));
 }
 
-void Zone::setTempConsigne(uint8_t valeur) {
+void Zone::setTempConsigne(float valeur) {
+    DEBUGLN(F("Zone - +setTempConsigne"));
+
     if (valeur != tempConsigne) {
         tempConsigne = valeur;
     }
+    DEBUGLN(F("Zone - -setTempConsigne"));
 }
 
-void Zone::setTempAmbiance(uint8_t valeur) {
+void Zone::setTempAmbiance(float valeur) {
+    DEBUGLN(F("Zone - +setTempAmbiance"));
+
     if (valeur != tempAmbiance) {
         tempAmbiance = valeur;
     }
+    DEBUGLN(F("Zone - -setTempAmbiance"));
 }
 
-void Zone::setMode(uint8_t valeur) {
+void Zone::setMode(float valeur) {
+    DEBUGLN(F("Zone - +setMode"));
+
     if (valeur != mode) {
         mode = valeur;
     }
+
+    DEBUGLN(F("Zone - -setMode"));
 }

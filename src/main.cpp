@@ -5,30 +5,37 @@
 #include <heltec.h>
 #include <Preferences.h>
 
-#include "interfaces/Mqtt.h"
+#include "interfaces/MqttPub.h"
+#include "interfaces/MqttSub.h"
 #include "modele/Chaudiere.h"
-#include "interfaces/VisioConnect.h"
+#include "interfaces/VisioConnectSub.h"
 
-Mqtt * mqtt;
-Chaudiere* frisquet;
-VisioConnect* visioConnect;
+
+MqttPub * mqttPub;
+MqttSub * mqttSub;
+Chaudiere* chaudiere;
+VisioConnectSub* visioConnectSub;
 
 void setup() {
     DEBUG_INIT
 
     initWifi();
 
-    frisquet = new Chaudiere();
+    chaudiere = new Chaudiere();
 
     //TODO ajouter le connecte (si présent)
     //TODO ajouter la sonde externe (si présent)
     //TODO le faire lors de la réception de trames sauf pour les choses émulées -> activées par config.h
 
-    mqtt = new Mqtt();
-    mqtt->init();
+    //Création des connexions mqtt dans les deux sens (Publish/Subscribe)
+    mqttPub = new MqttPub();
+    mqttPub->init();
+    mqttSub = new MqttSub(mqttPub->getClient());
+    mqttSub->init();
 
-    visioConnect = new VisioConnect(frisquet);
-    visioConnect->init();
+    visioConnectSub = new VisioConnectSub(chaudiere, mqttPub);
+    visioConnectSub->init();
+
 }
 
 void initWifi() {
@@ -48,10 +55,10 @@ void initWifi() {
 void loop() {
 
     //TODO Faire le deploy lors de la découverte des zones/capteurs...
-    mqtt->deployAutoDiscoveryHA(frisquet);
+    mqttPub->deployAutoDiscoveryHA(chaudiere);
 
-    visioConnect->lireTrame();
+    visioConnectSub->lireTrame();
 
-    mqtt->loop();
-
+    mqttPub->loop();
+    mqttSub->loop();
 }

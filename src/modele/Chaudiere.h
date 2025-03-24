@@ -2,6 +2,7 @@
 #define __CHAUDIERE_H_
 
 #include <Arduino.h>
+#include <map>
 #include "Zone.h"
 #include "config.h"
 #include "../debug.h"
@@ -14,27 +15,25 @@ class Chaudiere {
     public:
         Chaudiere();
         
-        Zone *getZone1() const { return zone1; };
-        Zone *getZone2() const { return zone2; };
-        Zone *getZone3() const { return zone3; };
-
+        Zone* getZoneById(byte id);        // Récupère une zone par son ID
+        Zone* addZone(byte id); // Ajoute une zone au tableau
+        
         /* températur extérieure */
-        void setTempExterieure(uint8_t value);
-        void setTempCorpsDeChauffe(uint8_t value);
-
+        void setTempExterieure(float value);
+        float getTempExterieure() const { return tempExterieure; };   // Getter pour tempExterieure
+        
+        void setTempCorpsDeChauffe(float value);
+        float getTempCorpsDeChauffe() const { return tempCorpsDeChauffe; }; // Getter pour tempCorpsDeChauffe
+        
     private:
-        Zone *zone1 = nullptr;
-        Zone *zone2 = nullptr;
-        Zone *zone3 = nullptr;
-
-        uint8_t tempExterieure;
-        uint8_t tempCorpsDeChauffe;
-
+        std::map<byte, Zone*> zones;       // Tableau associatif des zones
+        float tempExterieure;
+        float tempCorpsDeChauffe;
+        
         //consoGazChauffage
         //consoGazECS
         //
 
-        Zone* getZoneById(int zoneId);
 };
 
 #endif  //__CHAUDIERE_H_
