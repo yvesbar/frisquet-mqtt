@@ -8,7 +8,30 @@ static const char* mqttServer = ""; // Mettre l'IP du serveur MQTT
 static const int mqttPort = 1883;
 static const char* mqttUsername = ""; // Mettre le user MQTT
 static const char* mqttPassword = ""; // Mettre votre mot de passe MQTT
+static const String mqttRootNode = "frisquet"; // noeud MQTT dans lequel publier les valeurs
 
 static uint8_t network_id[] = {0x00, 0x00, 0x00, 0x00}; // Remplacer NN par le network id de la chaudière
 
+//Nom des zones (pour mqtt)
+static const String ZONE1_NOM = "premier";
+static const String ZONE2_NOM = "rdc";
+static const String ZONE3_NOM = "zone3";
+
+//Indique si la chaudière sert pour la production d'eau chaude sanitaire
+static const bool ECS_ACTIF = false;
+
+//Indique si le capteur de température extérieur est présent (true) 
+static const bool TEMP_EXTERIEUR_PHYSIQUE_ACTIF = true;
+
+//Indique si le capteur de température ext doit etre émulé
+//FIXME A implémenter
+static const bool TEMP_EXTERIEUR_EMULE_ACTIF = true;
+
+
+
 #endif // CONFIG_H
+
+
+
+#endif // CONFIG_H
+a

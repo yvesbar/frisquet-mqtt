@@ -17,10 +17,6 @@ static const String ZONE1_NOM = "premier";
 static const String ZONE2_NOM = "rdc";
 static const String ZONE3_NOM = "zone3";
 
-//Configuration des zones actives
-static const bool ZONE2_ACTIF = true;
-static const bool ZONE3_ACTIF = false;
-
 //Indique si la chaudière sert pour la production d'eau chaude sanitaire
 static const bool ECS_ACTIF = false;
 
