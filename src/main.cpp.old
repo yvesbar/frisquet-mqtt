@@ -205,7 +205,7 @@ void updateDisplay()
   }
 }
 //****************************************************************************
-void txConfiguration()
+void txConfiguration() //Migré
 {
   int state = radio.beginFSK();
   state = radio.setFrequency(868.96);
@@ -802,7 +802,7 @@ bool assFriCon()
   return result;
 }
 //****************************************************************************
-void initOTA()
+void initOTA() //MIgré
 {
   ArduinoOTA.setHostname("ESP32Frisquet");
   ArduinoOTA.setTimeout(25); // Augmenter le délai d'attente à 25 secondes
@@ -909,6 +909,7 @@ void handleRadioPacket(byte *byteArr, int len)
   message[0] = '\0';
   if (custom_friCon_id != 0x00)
   {
+    //connect
     if (len == 63)
     {
       if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg79e0 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
@@ -1010,6 +1011,7 @@ void handleRadioPacket(byte *byteArr, int len)
     
     }
 
+    //connect
     else if (len == 55 && byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x88 && byteArr[5] == 0x17)
     {
       uint8_t modeValue = byteArr[10];
@@ -1021,31 +1023,16 @@ void handleRadioPacket(byte *byteArr, int len)
   else
   {
 
-    if (len == 23) { // Check if the length is 23 bytes
+    if (len == 23) { // Migré
 
-      //TODO à tester : 80 25 0D F4 01 17 9C 54 00 04 A0 29 00 01 02 00 48 (msg de 17 de longles 2 à la fin ???)
+
       bool sat1=byteArr[1] == 0x08;
 
-      // Extract bytes 16 and 17
-      int value = byteArr[15] << 8 | byteArr[16];
-      float temperatureValue = value / 10.0;
 
-      // Extract bytes 18 and 19
-      value = byteArr[17] << 8 | byteArr[18];
-      float temperatureconsValue = value / 10.0;
-
-      // Publish temperature to the "frisquet_temperature" MQTT topic
-      char temperaturePayload[10];
-      snprintf(temperaturePayload, sizeof(temperaturePayload), "%.1f", temperatureValue);
-      publishMessage(sat1 ? TEMP_AMBIANTE1_TOPIC : TEMP_AMBIANTE2_TOPIC, temperaturePayload);
-      // Publish temperature to the "tempconsigne" MQTT topic
-      char tempconsignePayload[10];
-      snprintf(tempconsignePayload, sizeof(tempconsignePayload), "%.1f", temperatureconsValue);
-      publishMessage(sat1 ? TEMP_CONSIGNE1_TOPIC : TEMP_CONSIGNE2_TOPIC, tempconsignePayload);
     }
 
     //Message de la chaudière vers la/les sondes
-    else if (len == 49) {
+    else if (len == 49) { // migré
 
       if (sensorTempExt) {
         // Extract bytes 7 et 8 : temp ext

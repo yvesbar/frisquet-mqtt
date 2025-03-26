@@ -168,7 +168,7 @@ void VisioConnectSub::lireTrame17(byte* trame) {
  *   - la température extérieure connue de la chaudière (issue du module H ou d'un capteur extérieur)
  * 
  * Exemple de trame :
- *   RECEIVED [49] : 08 80 A7 08 81 17 2A 00 64 00 00 25 03 23 21 02 19 00 00 00 D5 00 B4 00 20 00 00 00 C6 00 C6 00 C3 00 25 00 00 00 00 04 F6 00 00 00 00 00 00 00 00 
+ *   RECEIVED [49] : 08 80 A7 08 81 17 2A 00 64 00 00 25 03 23 21 02 19 00 00 00 D5 00 B4 00 20 00 00 00 C6 00 C6 00 C3 00 25 00 00 00 00 04 F6 00 00 00 00 00 00 00 00
  */
 void VisioConnectSub::lireTrame49(byte* trame) {
     DEBUGLN(F("VisioConnectSub - +lireTrame19"));
@@ -184,4 +184,3 @@ void VisioConnectSub::lireTrame49(byte* trame) {
 
     DEBUGLN(F("VisioConnectSub - -lireTrame19"));
 }
-

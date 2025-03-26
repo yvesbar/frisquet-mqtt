@@ -10,28 +10,12 @@ Zone::Zone(byte id, String nomZone) {
 
 void Zone::setTempConsigne(float valeur) {
     DEBUGLN(F("Zone - +setTempConsigne"));
-
-    if (valeur != tempConsigne) {
-        tempConsigne = valeur;
-    }
+    tempConsigne = valeur;
     DEBUGLN(F("Zone - -setTempConsigne"));
 }
 
 void Zone::setTempAmbiance(float valeur) {
     DEBUGLN(F("Zone - +setTempAmbiance"));
-
-    if (valeur != tempAmbiance) {
-        tempAmbiance = valeur;
-    }
+    tempAmbiance = valeur;
     DEBUGLN(F("Zone - -setTempAmbiance"));
-}
-
-void Zone::setMode(float valeur) {
-    DEBUGLN(F("Zone - +setMode"));
-
-    if (valeur != mode) {
-        mode = valeur;
-    }
-
-    DEBUGLN(F("Zone - -setMode"));
 }

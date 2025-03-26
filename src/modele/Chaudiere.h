@@ -9,7 +9,6 @@
 
 /*
     Classe représentant la chaudière frisquet
-    TODO - Les fonctionnalités de la chaudière sont ajoutées au fur et à mesure de la réception des trames
 */ 
 class Chaudiere {
     public:
@@ -25,6 +24,8 @@ class Chaudiere {
         void setTempCorpsDeChauffe(float value);
         float getTempCorpsDeChauffe() const { return tempCorpsDeChauffe; }; // Getter pour tempCorpsDeChauffe
         
+        //TODO ajouter l'identifiant réseau
+
     private:
         std::map<byte, Zone*> zones;       // Tableau associatif des zones
         float tempExterieure;

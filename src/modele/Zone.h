@@ -14,6 +14,11 @@ class Zone {
         static const byte ZONE1_ID = 0x08;
         static const byte ZONE2_ID = 0x09;
         static const byte ZONE3_ID = 0x0a;
+        enum Mode {
+            JOUR,
+            NUIT,
+            HORS_GEL
+        };
 
         /* Constructeur avec id de zone */
         Zone(byte, String);
@@ -31,10 +36,10 @@ class Zone {
         void setTempAmbiance(float valeur);
         
         /* Mode */
-        float getMode() const { return mode; }
-        void setMode (float valeur);
-        
-        //TODO ajouter le constructeur qui prend en param un ID de zone
+        Mode getMode() const { return mode; }
+        void setMode (Mode valeur) { mode = valeur; }
+
+ 
         
     private:
         //Identifiant de zone
@@ -43,7 +48,7 @@ class Zone {
 
         float tempConsigne;
         float tempAmbiance;
-        uint8_t mode;
+        Mode mode;
 };
 
 #endif //__ZONE_H_

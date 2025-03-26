@@ -30,7 +30,6 @@ Zone* Chaudiere::addZone(byte id) {
 }
 
 Zone* Chaudiere::getZoneById(byte id) {
-    DEBUG(F("Chaudiere - getZoneById : "));
     if (zones.find(id) == zones.end()) {
         DEBUG(F("Chaudiere - Création d'une nouvelle zone avec l'ID : "));
         DEBUGLN(id);
