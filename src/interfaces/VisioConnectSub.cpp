@@ -5,50 +5,33 @@
 bool VisioConnectSub::receivedFlag = false;
 
 VisioConnectSub::VisioConnectSub(Chaudiere* chaudiere, MqttPub* mqtt) 
-    : chaudiere(chaudiere), mqttPub(mqtt), radio(new Module(SS, DIO0, RST_LoRa, BUSY_LoRa)) {
+    : chaudiere(chaudiere), mqttPub(mqtt) {
     DEBUGLN(F("VisioConnectSub - +Constructeur"));
     DEBUGLN(F("VisioConnectSub - -Constructeur"));
 }
 
-void VisioConnectSub::init() {
-    DEBUGLN(F("VisioConnectSub - +init"));
-    // Initialize OLED display
-    Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
-    Heltec.display->init();
-    // Heltec.display->flipScreenVertically();
-    Heltec.display->setFont(ArialMT_Plain_10);
-    Heltec.display->clear();
-    Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
-    Heltec.display->display();
-
-    // Configuration du callback pour la réception des paquets
-    radio.setPacketReceivedAction(VisioConnectSub::setFlag);
-
-    // start listening for Radio packets
-    int state = radio.beginFSK();
-    state = radio.setFrequency(868.96);
-    state = radio.setBitRate(25.0);
-    state = radio.setFrequencyDeviation(50.0);
-    state = radio.setRxBandwidth(250.0);
-    state = radio.setPreambleLength(4);
-    //TODO géréer la mémoire NVS
-    state = radio.setSyncWord(network_id, sizeof(network_id));
-
-    state = radio.startReceive();
-    if (state == RADIOLIB_ERR_NONE)
-    {
-        DEBUGLN("Module visioConnect initialisé");
-    }
-    else
-    {
-        DEBUGLN("Module visioConnect en erreur, code : ");
-        DEBUGLN(state);
-    }
-    DEBUGLN(F("VisioConnectSub - -init"));
-}
 
 void VisioConnectSub::setFlag() {
     receivedFlag = true;
+}
+
+
+void VisioConnectSub::init() {
+    DEBUGLN(F("VisioConnectSub - +init"));
+
+   
+    // Configuration du callback pour la réception des paquets
+    ModuleHeltec::radio.setPacketReceivedAction(VisioConnectSub::setFlag);
+
+    int state = ModuleHeltec::radio.startReceive();
+    if (state == RADIOLIB_ERR_NONE) {
+        DEBUGLN("Module visioConnect initialisé");
+    } else {
+        DEBUG(F("Erreur d'initialisation du module visioConnect, code : "));
+        DEBUGLN(state);
+    }
+
+    DEBUGLN(F("VisioConnectSub - -init"));
 }
 
 void VisioConnectSub::lireTrame() {
@@ -57,9 +40,9 @@ void VisioConnectSub::lireTrame() {
 
         // Lecture de la trame
         byte byteArr[RADIOLIB_SX126X_MAX_PACKET_LENGTH];
-        int state = radio.readData(byteArr, 0);
+        int state = ModuleHeltec::radio.readData(byteArr, 0);
         if (state == RADIOLIB_ERR_NONE) {
-            int len = radio.getPacketLength();
+            int len = ModuleHeltec::radio.getPacketLength();
             #ifdef DEBUG_ON
                 Serial.printf("RECEIVED [%2d] : ", len);
                 for (int i = 0; i < len; i++) {

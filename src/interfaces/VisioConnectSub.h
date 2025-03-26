@@ -16,10 +16,10 @@
 #include <heltec.h>
 #include <RadioLib.h>
 #include <string>
-#include "image.h"
 #include "../modele/Chaudiere.h"
 #include "../modele/ModuleH.h"
 #include "MqttPub.h"
+#include "ModuleHeltec.h"
 
 class VisioConnectSub {
     public:
@@ -32,7 +32,6 @@ class VisioConnectSub {
     private:
         Chaudiere* chaudiere; // Référence à une instance de Chaudiere
         MqttPub* mqttPub;        // Référence à une instance de MqttPub
-        SX1262 radio;         // Module radio en tant que membre privé
 
         void lireTrame23(byte* trame); // Méthode pour traiter une trame de 23 octets
         void lireTrame17(byte* trame); // Méthode pour traiter une trame de 17 octets

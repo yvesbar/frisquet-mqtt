@@ -9,26 +9,13 @@
 #include "interfaces/MqttSub.h"
 #include "modele/Chaudiere.h"
 #include "interfaces/VisioConnectSub.h"
+#include "interfaces/ModuleHeltec.h"
 
 
 MqttPub * mqttPub;
 MqttSub * mqttSub;
 Chaudiere* chaudiere;
 VisioConnectSub* visioConnectSub;
-
-void initWifi() {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        Serial.println("Connection Failed! Rebooting...");
-        DEBUGLN(F("INIT - Erreur connexion Wifi - reboot"));
-        delay(5000);
-        ESP.restart();
-    }
-
-    DEBUG(F("INIT - Adresse IP : "));
-    DEBUGLN(WiFi.localIP());
-}
 
 void initOTA()
 {
@@ -60,21 +47,20 @@ void initOTA()
 void setup() {
     DEBUG_INIT
 
-    initWifi();
+    ModuleHeltec::initWifi(ssid, password);
+    ModuleHeltec::initRadio();
+    ModuleHeltec::initAffichage();
     initOTA();
 
     chaudiere = new Chaudiere();
 
-    //TODO ajouter le connecte (si présent)
-    //TODO ajouter la sonde externe (si présent)
-    //TODO le faire lors de la réception de trames sauf pour les choses émulées -> activées par config.h
-
-    //Création des connexions mqtt dans les deux sens (Publish/Subscribe)
+    // Création des connexions MQTT
     mqttPub = new MqttPub();
     mqttPub->init();
     mqttSub = new MqttSub(mqttPub->getClient());
     mqttSub->init();
 
+    // Initialisation de VisioConnectSub
     visioConnectSub = new VisioConnectSub(chaudiere, mqttPub);
     visioConnectSub->init();
 }
