@@ -1,9 +1,17 @@
 #include "Chaudiere.h"
 
+Chaudiere& Chaudiere::getInstance() {
+    static Chaudiere instance; // Instance unique de la classe
+    return instance;
+}
+
 Chaudiere::Chaudiere() {
     DEBUGLN(F("Chaudiere - Constructeur"));
 }
 
+/**
+ * Ajoute une zone dynamiquement à la chaudière
+ */
 Zone* Chaudiere::addZone(byte id) {
     Zone* zone = nullptr;
     switch (id)  {
@@ -24,7 +32,6 @@ Zone* Chaudiere::addZone(byte id) {
             DEBUGLN(id);
             break;
     }
-
 
     return zone;
 }

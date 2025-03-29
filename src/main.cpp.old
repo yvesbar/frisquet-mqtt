@@ -668,7 +668,8 @@ void txfriConMsg()
 }
 //****************************************************************************
 bool associateDevice(
-    uint8_t *deviceTxArr, size_t deviceTxArrLen, // Tableau et taille de la payload d'association
+    uint8_t *deviceTxArr,
+    size_t deviceTxArrLen, // Tableau et taille de la payload d'association
     const uint8_t *defaultNetworkId,             // Réseau par défaut
     const char *idKey,                           // Clé NVS pour stocker l'ID du device (ex: "son_id" ou "con_id")
     const char *assCommandTopic,                 // Topic MQTT sur lequel on a reçu la demande d'association (ex: ASS_SON_TOPIC)

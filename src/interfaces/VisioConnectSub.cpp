@@ -4,8 +4,8 @@
 // Initialisation de la variable statique
 bool VisioConnectSub::receivedFlag = false;
 
-VisioConnectSub::VisioConnectSub(Chaudiere* chaudiere, MqttPub* mqtt) 
-    : chaudiere(chaudiere), mqttPub(mqtt) {
+VisioConnectSub::VisioConnectSub(MqttPub* mqtt) 
+    : mqttPub(mqtt) {
     DEBUGLN(F("VisioConnectSub - +Constructeur"));
     DEBUGLN(F("VisioConnectSub - -Constructeur"));
 }
@@ -91,9 +91,9 @@ void VisioConnectSub::lireTrame23(byte* trame) {
     DEBUGLN(F("VisioConnectSub - +lireTrame23"));
 
     // Récupération de la zone. Si elle n'existe pas, on la crée et on pousse la conf HA pour la zone
-    Zone* zone = chaudiere->getZoneById(trame[1]);
+    Zone* zone = Chaudiere::getInstance().getZoneById(trame[1]);
     if (zone == nullptr) {
-        zone = chaudiere->addZone(trame[1]);
+        zone = Chaudiere::getInstance().addZone(trame[1]);
         if (zone == nullptr) {
             DEBUGLN(F("Zone inconnue"));
             return;
@@ -136,8 +136,8 @@ void VisioConnectSub::lireTrame17(byte* trame) {
     if (trame[1] == ModuleH::ID) {
         // Extraction de la température extérieure
         float temperatureExterieure = byteToFloat(trame[15], trame[16]);
-        if (temperatureExterieure != chaudiere->getTempExterieure()) {
-            chaudiere->setTempExterieure(temperatureExterieure);
+        if (temperatureExterieure != Chaudiere::getInstance().getTempExterieure()) {
+            Chaudiere::getInstance().setTempExterieure(temperatureExterieure);
             mqttPub->publishTempExterieure(temperatureExterieure);
         }
     }
@@ -159,8 +159,8 @@ void VisioConnectSub::lireTrame49(byte* trame) {
     if (trame[0] == Zone::ZONE1_ID || trame[0] == Zone::ZONE2_ID || trame[0] == Zone::ZONE3_ID) {
         // Extraction de la température extérieure
         float temperatureExterieure = byteToFloat(trame[7], trame[8]);
-        if (temperatureExterieure != chaudiere->getTempExterieure()) {
-            chaudiere->setTempExterieure(temperatureExterieure);
+        if (temperatureExterieure != Chaudiere::getInstance().getTempExterieure()) {
+            Chaudiere::getInstance().setTempExterieure(temperatureExterieure);
             mqttPub->publishTempExterieure(temperatureExterieure);
         }
     }

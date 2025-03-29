@@ -98,6 +98,24 @@ payload_template: "{{ state_attr('weather.XXXXXX', 'temperature') }}"
 
 ---
 
+# Récupération du networ_!id
+
+//TODO = rédiger : 
+Hello,
+moi j’ai utilisé une clé SDR pour récupérer l’id de ma chaudière mais avec les infos issues du code de mgre je viens de faire le test d’écouter le traffic avec l’id de broadcast (FF FF FF FF) pendant la ré-association de mon satellite et bingo, la chaudière envoi bien son id…
+Du coup il faut juste mettre l’id de broadcast
+
+int network_id[] = {0xFF, 0xFF, 0xFF, 0xFF};
+state = radio.setSyncWord(network_id, 4);
+
+puis effacer le satellite dans le menu de la chaudière puis relancer une association. Sur la console série on voit apparaitre les échange d’association entre la chaudière et le satellite :
+RECEIVED [11] : 00 80 33 D8 02 41 04 NN NN NN NN ==> id chaudière
+…
+RECEIVED [11] : 00 80 1A 04 02 41 04 NN NN NN NN ==> id chaudière
+RECEIVED [14] : 80 08 1A 04 82 41 03 23 12 06 01 27 00 02 ==>réponse du satellite
+
+---
+
 # Association du capteur de température extérieure
 
 1. Sur la chaudière, accédez au menu de configuration, modifiez le mode de régulation actuel et sélectionnez la ligne « température ambiante + extérieure ».

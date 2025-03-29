@@ -14,11 +14,9 @@
 
 MqttPub * mqttPub;
 MqttSub * mqttSub;
-Chaudiere* chaudiere;
 VisioConnectSub* visioConnectSub;
 
-void initOTA()
-{
+void initOTA() {
     ArduinoOTA.setHostname("ESP32Frisquet");
     ArduinoOTA.setTimeout(25); // Augmenter le délai d'attente à 25 secondes
     ArduinoOTA
@@ -47,12 +45,12 @@ void initOTA()
 void setup() {
     DEBUG_INIT
 
+    //TODO init de la chaudière avec network_id, frisquet connect, etc... à partir des constantes de config.h
+
     ModuleHeltec::initWifi(ssid, password);
     ModuleHeltec::initRadio();
     ModuleHeltec::initAffichage();
     initOTA();
-
-    chaudiere = new Chaudiere();
 
     // Création des connexions MQTT
     mqttPub = new MqttPub();
@@ -61,17 +59,15 @@ void setup() {
     mqttSub->init();
 
     // Initialisation de VisioConnectSub
-    visioConnectSub = new VisioConnectSub(chaudiere, mqttPub);
+    visioConnectSub = new VisioConnectSub(mqttPub);
     visioConnectSub->init();
 }
 
 void loop() {
 
-    //TODO Faire le deploy lors de la découverte des zones/capteurs...
-    mqttPub->deployAutoDiscoveryHA(chaudiere);
-
+    mqttPub->deployAutoDiscoveryHA();    
     visioConnectSub->lireTrame();
-
+    
     mqttPub->loop();
     mqttSub->loop();
 }

@@ -36,7 +36,7 @@ void MqttPub::init() {
 /**
  * Permet de déployer les messages/topics necessaires pour la configuration automatique des devices dans HomeAssistant
 */
-void MqttPub::deployAutoDiscoveryHA(Chaudiere* chaudiere) {
+void MqttPub::deployAutoDiscoveryHA() {
     if (!configHADeployed) {
         DEBUGLN(F("MQTT - +deployAutoDiscoveryHA"));
         configHADeployed = true;
@@ -217,15 +217,15 @@ void MqttPub::deployConfHAChaudiere() {
 }*/
 
 String MqttPub::getZoneTempConsigneTopic(String nomZoneMqtt) {
-    return mqttRootNode + "/" +  nomZoneMqtt + "/tempConsigne/state";
+    return mqttRootNode + "/" +  nomZoneMqtt + "/tempConsigne";
 }
 
 String MqttPub::getZoneTempAmbianteTopic(String nomZoneMqtt) {
-    return  mqttRootNode + "/" + nomZoneMqtt + "/tempAmbiante/state";
+    return  mqttRootNode + "/" + nomZoneMqtt + "/tempAmbiante";
 }
 
 String MqttPub::getZoneTempExterieurTopic() {
-    return mqttRootNode + "/tempExterieure/state";
+    return mqttRootNode + "/tempExterieure";
 }
 
 String MqttPub::getConsoGazChauffageTopic() {
@@ -233,11 +233,11 @@ String MqttPub::getConsoGazChauffageTopic() {
 }
 
 String MqttPub::getConsoGazECSTopic() {
-    return mqttRootNode + "/consogaz-ecs/state";
+    return mqttRootNode + "/consogaz-ecs";
 }
 
 String MqttPub::getTempCorpsDeChauffeTopic() {
-    return mqttRootNode + "/tempCorpsDeChauffe/state";
+    return mqttRootNode + "/tempCorpsDeChauffe";
 }
 
 void MqttPub::loop() {

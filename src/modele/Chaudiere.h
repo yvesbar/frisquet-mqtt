@@ -12,7 +12,7 @@
 */ 
 class Chaudiere {
     public:
-        Chaudiere();
+        static Chaudiere& getInstance(); // Méthode pour obtenir l'instance unique
         
         Zone* getZoneById(byte id);        // Récupère une zone par son ID
         Zone* addZone(byte id); // Ajoute une zone au tableau
@@ -27,6 +27,10 @@ class Chaudiere {
         //TODO ajouter l'identifiant réseau
 
     private:
+        Chaudiere(); // Constructeur privé pour le singleton
+        Chaudiere(const Chaudiere&) = delete; // Suppression du constructeur de copie
+        Chaudiere& operator=(const Chaudiere&) = delete; // Suppression de l'opérateur d'affectation
+
         std::map<byte, Zone*> zones;       // Tableau associatif des zones
         float tempExterieure;
         float tempCorpsDeChauffe;

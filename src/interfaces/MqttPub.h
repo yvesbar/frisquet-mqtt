@@ -26,7 +26,7 @@ class MqttPub {
         void loop(); // Gère les tâches MQTT en continu
 
         //Permet de déployer la configuration d'auto conf HA
-        void deployAutoDiscoveryHA(Chaudiere*);
+        void deployAutoDiscoveryHA();
 
         //Stock un évènement pour le publiquer plus tard
         //void publishAsync(String topic, String value);

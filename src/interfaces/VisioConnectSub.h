@@ -23,14 +23,13 @@
 
 class VisioConnectSub {
     public:
-        VisioConnectSub(Chaudiere* chaudiere, MqttPub* mqttPub); // Constructeur avec MqttPub
+        VisioConnectSub(MqttPub* mqttPub); // Constructeur avec MqttPub
         void init(); // Public method to initialize the OLED display and radio
         static void setFlag(); // Méthode statique pour indiquer qu'un paquet a été reçu
         void lireTrame(); // Méthode pour lire et traiter une trame reçue
         static bool receivedFlag; // Drapeau pour indiquer qu'un paquet a été reçu
 
     private:
-        Chaudiere* chaudiere; // Référence à une instance de Chaudiere
         MqttPub* mqttPub;        // Référence à une instance de MqttPub
 
         void lireTrame23(byte* trame); // Méthode pour traiter une trame de 23 octets
