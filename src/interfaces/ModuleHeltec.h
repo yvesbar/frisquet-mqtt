@@ -2,6 +2,7 @@
 #define __MODULE_HELTEC_H_
 
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 #include <WiFi.h>
 #include <heltec.h>
 #include <RadioLib.h>
@@ -23,6 +24,9 @@ public:
 
     // Affiche le message indiqué sur l'écran OLED
     static void affiche(const String& message);
+
+    // Méthode statique pour initialiser l'OTA
+    static void initOTA();
 
     //gestion de la mémoire flash du module
     //TODO à gérer mais vu que c'est déjà dans le config.h, je ne sais pas si c'est utile

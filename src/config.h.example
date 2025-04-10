@@ -30,8 +30,3 @@ static const bool TEMP_EXTERIEUR_EMULE_ACTIF = true;
 
 
 #endif // CONFIG_H
-
-
-
-#endif // CONFIG_H
-a

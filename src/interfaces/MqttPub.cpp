@@ -208,14 +208,6 @@ void MqttPub::deployConfHAChaudiere() {
 }*/
 
 
-/*void MqttPub::publishZone(string nomZoneMqtt, string topic, float temperature) {
-    DEBUGLN(F("MQTT - +publishZone"));
-
-    publish(getZoneTempAmbianteTopic(nomZoneMqtt), temperature),
-
-    DEBUGLN(F("MQTT - -publishZone"));
-}*/
-
 String MqttPub::getZoneTempConsigneTopic(String nomZoneMqtt) {
     return mqttRootNode + "/" +  nomZoneMqtt + "/tempConsigne";
 }

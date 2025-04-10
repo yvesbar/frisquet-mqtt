@@ -7,8 +7,6 @@
     0x25 : Module H (vanne 4 voies + sonde extérieure filaire) qui pilote la zone 2.
 */
 
-
-
 #ifndef __VISIOCONNECT_SUB_H_
 #define __VISIOCONNECT_SUB_H_
 
@@ -21,6 +19,10 @@
 #include "MqttPub.h"
 #include "ModuleHeltec.h"
 
+
+/**
+ * Simule le module Visio et le module connect : interprète les trames reçues
+ */
 class VisioConnectSub {
     public:
         VisioConnectSub(MqttPub* mqttPub); // Constructeur avec MqttPub
