@@ -18,8 +18,7 @@ void VisioConnectSub::setFlag() {
 
 void VisioConnectSub::init() {
     DEBUGLN(F("VisioConnectSub - +init"));
-
-   
+       
     // Configuration du callback pour la réception des paquets
     ModuleHeltec::radio.setPacketReceivedAction(VisioConnectSub::setFlag);
 

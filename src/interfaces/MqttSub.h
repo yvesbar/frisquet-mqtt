@@ -3,17 +3,34 @@
 
 #include <Arduino.h>
 #include <PubSubClient.h>
+#include "config.h"
 #include "MqttPub.h"
+#include "VisioConnectPub.h"
 
 class MqttSub {
+    
     public:
-        MqttSub(PubSubClient* client); // Constructeur avec MqttPub
-        void init(); // Initialise les abonnements MQTT
+        // Delete copy constructor and assignment operator
+        MqttSub(const MqttSub&) = delete;
+        MqttSub& operator=(const MqttSub&) = delete;
+        
+        // Static method to get the singleton instance
+        static MqttSub& getInstance();
+        
+        void init(PubSubClient* client); // Initialise les abonnements MQTT
         void loop(); // Gère les messages entrants
-
+        
+        static void staticCallback(char* topic, byte* payload, unsigned int length);
+        void callback(char* topic, byte* payload, unsigned int length); // Callback pour les messages MQTT
+        
+        static String getDemandeAssociationConnectTopic();
+    
     private:
-        PubSubClient* client; // Client MQTT partagé
-        static void callback(char* topic, byte* payload, unsigned int length); // Callback pour les messages MQTT
+        static MqttSub* instance; // Static instance pointer
+        PubSubClient* client;
+
+        // Private constructor to enforce singleton
+        MqttSub();
 };
 
 #endif // __MQTT_SUB_H_

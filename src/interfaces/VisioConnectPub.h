@@ -9,13 +9,14 @@
 
 class VisioConnectPub {
 public:
-    VisioConnectPub();
+    static VisioConnectPub* getInstance(); // Méthode pour obtenir l'instance unique
 
     // Permet d'associer le module Frisquet Connect émulé par le Heltec
     bool associerFrisquetConnect();
 
 private:
-
+    VisioConnectPub(); // Constructeur privé pour le singleton
+    static VisioConnectPub* instance; // Pointeur vers l'instance unique
 };
 
 #endif // VISIOCONNECTPUB_H

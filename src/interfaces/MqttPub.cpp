@@ -1,4 +1,5 @@
 #include "MqttPub.h"
+#include "MqttSub.h"
 
 //Déclaration des constantes
 const String MqttPub::MQTT_HA_TOPIC_SENSOR = "homeassistant/sensor/frisquet/";
@@ -51,6 +52,7 @@ void MqttPub::deployAutoDiscoveryHA() {
         
         //TODO à tester :
         deployConfHAChaudiere();
+        deployConfHASwitchAssociationConnect();
 
         DEBUGLN(F("MQTT - -deployAutoDiscoveryHA"));
     }
@@ -127,7 +129,7 @@ void MqttPub::deployConfHAtempExt() {
         ss << "\"device_class\": \"temperature\",";
         ss << MQTT_HA_DEVICE_ID;
         ss << "}";
-        client->publish((MqttPub::MQTT_HA_TOPIC_SENSOR + "tempExterieure/config").c_str(), ss.str().c_str());
+        client->publish((MQTT_HA_TOPIC_SENSOR + "tempExterieure/config").c_str(), ss.str().c_str());
         ss.str("");
     }
 
@@ -149,7 +151,7 @@ void MqttPub::deployConfHAChaudiere() {
     ss << "\"state_class\": \"total_increasing\",";
     ss << MQTT_HA_DEVICE_ID;
     ss << "}";
-    client->publish((MqttPub::MQTT_HA_TOPIC_SENSOR + "consogaz-ch/config").c_str(), ss.str().c_str());
+    client->publish((MQTT_HA_TOPIC_SENSOR + "consogaz-ch/config").c_str(), ss.str().c_str());
     ss.str("");
 
 
@@ -164,7 +166,7 @@ void MqttPub::deployConfHAChaudiere() {
         ss << "\"state_class\": \"total_increasing\",";
         ss << MQTT_HA_DEVICE_ID;
         ss << "}";
-        client->publish((MqttPub::MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
+        client->publish((MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
         ss.str("");
     }
 
@@ -177,10 +179,27 @@ void MqttPub::deployConfHAChaudiere() {
     ss << "\"device_class\": \"temperature\",";
     ss << MQTT_HA_DEVICE_ID;
     ss << "}";
-    client->publish((MqttPub::MQTT_HA_TOPIC_SENSOR + "tempCorpsDeChauffe/config").c_str(), ss.str().c_str());
+    client->publish((MQTT_HA_TOPIC_SENSOR + "tempCorpsDeChauffe/config").c_str(), ss.str().c_str());
     ss.str("");
 
   DEBUGLN(F("MQTT - -deployConfHAChaudiere"));
+}
+
+void MqttPub::deployConfHASwitchAssociationConnect() {
+    DEBUGLN(F("MQTT - +deployConfHASwitchAssociationConnect"));
+    stringstream ss;
+    ss << "{";
+    ss << "\"uniq_id\": \"frisquet_association_switch\",";
+    ss << "\"name\": \"Association connect\",";
+    ss << "\"command_topic\": \"" << MqttSub::getDemandeAssociationConnectTopic().c_str() << "\",";
+    ss << "\"state_topic\": \"" << (MqttSub::getDemandeAssociationConnectTopic() + "/state").c_str() << "\",";
+    ss << "\"payload_on\": \"1\",";
+    ss << "\"payload_off\": \"0\",";
+    ss << MQTT_HA_DEVICE_ID;
+    ss << "}";
+    client->publish("homeassistant/switch/frisquet/association/config", ss.str().c_str(), true);
+    ss.str("");
+    DEBUGLN(F("MQTT - -deployConfHASwitchAssociationConnect"));
 }
 
 

@@ -51,6 +51,7 @@ class MqttPub {
 
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
+        void deployConfHASwitchAssociationConnect();
         String getZoneTempConsigneTopic(String nomZoneMqtt);
         String getZoneTempAmbianteTopic(String nomZoneMqtt);
         String getZoneTempExterieurTopic();

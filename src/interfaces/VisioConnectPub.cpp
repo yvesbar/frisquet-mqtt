@@ -1,8 +1,17 @@
 #include "VisioConnectPub.h"
 
+VisioConnectPub* VisioConnectPub::instance = nullptr; // Initialisation de l'instance unique
+
 VisioConnectPub::VisioConnectPub() {
     DEBUGLN(F("VisioConnectPub - +Constructeur"));
     DEBUGLN(F("VisioConnectPub - -Constructeur"));
+}
+
+VisioConnectPub* VisioConnectPub::getInstance() {
+    if (instance == nullptr) {
+        instance = new VisioConnectPub();
+    }
+    return instance;
 }
 
 /**
