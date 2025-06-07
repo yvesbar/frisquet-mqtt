@@ -191,8 +191,8 @@ void MqttPub::deployConfHASwitchAssociationConnect() {
     ss << "{";
     ss << "\"uniq_id\": \"frisquet_association_switch\",";
     ss << "\"name\": \"Association connect\",";
-    ss << "\"command_topic\": \"" << MqttSub::getDemandeAssociationConnectTopic().c_str() << "\",";
-    ss << "\"state_topic\": \"" << (MqttSub::getDemandeAssociationConnectTopic() + "/state").c_str() << "\",";
+    ss << "\"command_topic\": \"" << MqttSub::getDemandeAssociationConnectCommandTopic().c_str() << "\",";
+    ss << "\"state_topic\": \"" << MqttSub::getDemandeAssociationConnectStateTopic().c_str() << "\",";
     ss << "\"payload_on\": \"1\",";
     ss << "\"payload_off\": \"0\",";
     ss << MQTT_HA_DEVICE_ID;
@@ -240,11 +240,11 @@ String MqttPub::getZoneTempExterieurTopic() {
 }
 
 String MqttPub::getConsoGazChauffageTopic() {
-    return mqttRootNode + "/consogaz-ch/state";
+    return mqttRootNode + "/consogaz/chauffage";
 }
 
 String MqttPub::getConsoGazECSTopic() {
-    return mqttRootNode + "/consogaz-ecs";
+    return mqttRootNode + "/consogaz/ecs";
 }
 
 String MqttPub::getTempCorpsDeChauffeTopic() {

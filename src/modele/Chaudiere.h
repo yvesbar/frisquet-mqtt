@@ -26,6 +26,8 @@ class Chaudiere {
         
         //TODO ajouter l'identifiant réseau
 
+        static constexpr uint8_t idConnect = 0x7E;
+
     private:
         Chaudiere(); // Constructeur privé pour le singleton
         Chaudiere(const Chaudiere&) = delete; // Suppression du constructeur de copie

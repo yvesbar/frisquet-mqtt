@@ -15,7 +15,7 @@ void MqttSub::init(PubSubClient* client) {
     client->setCallback(MqttSub::staticCallback);
 
 
-    client->subscribe((MqttSub::getDemandeAssociationConnectTopic() + "/#").c_str()); // Exemple d'abonnement
+    client->subscribe((MqttSub::getDemandeAssociationConnectCommandTopic() + "/#").c_str()); // Exemple d'abonnement
 }
 
 void MqttSub::loop() {
@@ -36,24 +36,23 @@ void MqttSub::callback(char* topic, byte* payload, unsigned int length) {
     }
     Serial.println();
 
-    //TODO A tester + envoyer la config HA pour autogénérer le switch (en dur)
-    if (MqttSub::getDemandeAssociationConnectTopic().equals(topic)) {
+    //TODO A tester 
+    if (MqttSub::getDemandeAssociationConnectCommandTopic().equals(topic)) {
         // Traiter le message spécifique à l'association Frisquet Connect
-        //VisioConnectPub::getInstance()->associerFrisquetConnect();
+        VisioConnectPub::getInstance()->associerFrisquetConnect();
 
-        //Remet l'interrupteur à 0 (!!!!!!!!!!! 
-        
-         // !!!!!!!!!!génère une boucle infinie)
-         // !!!!!!!!!!!
-        client->publish((MqttSub::getDemandeAssociationConnectTopic() + "/state").c_str(), "0");
+        //Remet l'interrupteur à 0
+        client->publish(MqttSub::getDemandeAssociationConnectStateTopic().c_str(), "0");
 
     }
-    //Identifier l'action et le payload et appeler VisioConnectPub pour traiter l'action. Soit avec des callback, soit des appels directs
-
 }
 
-const String MqttSub::getDemandeAssociationConnectTopic() {
-    return mqttRootNode + "/connect/association";
+String MqttSub::getDemandeAssociationConnectCommandTopic() {
+    return mqttRootNode + "/connect/association/set";
+}
+
+String MqttSub::getDemandeAssociationConnectStateTopic() {
+    return mqttRootNode + "/connect/association/state";
 }
 
 

@@ -23,7 +23,8 @@ class MqttSub {
         static void staticCallback(char* topic, byte* payload, unsigned int length);
         void callback(char* topic, byte* payload, unsigned int length); // Callback pour les messages MQTT
         
-        static String getDemandeAssociationConnectTopic();
+        static String getDemandeAssociationConnectCommandTopic();
+        static String getDemandeAssociationConnectStateTopic();
     
     private:
         static MqttSub* instance; // Static instance pointer
