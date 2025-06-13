@@ -179,49 +179,93 @@ void VisioConnectSub::lireTrame63(byte* trame) {
     if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == idAttendu79e0 && trame[4] == 0x81 && trame[5] == 0x03) {
         idAttendu79e0 = 0;
 
+        // Variables réutilisées pour toutes les zones et mesures
+        int decimalValue;
+        float tempECS, tempCDC, tempDepart, tempAmbiante, tempConsigne;
+        Zone* zone;
+
         // Extraction de la température de l'ECS (Eau Chaude Sanitaire)
         if (Chaudiere::getInstance().isEcsActive()) {
-            int decimalValue1 = trame[7] << 8 | trame[8];
-            float tempECS = decimalValue1 / 10.0;
-            // Sauvegarde et publication uniquement si la valeur a changé
+            decimalValue = trame[7] << 8 | trame[8];
+            tempECS = decimalValue / 10.0;
             if (tempECS != Chaudiere::getInstance().getTempECS()) {
                 Chaudiere::getInstance().setTempECS(tempECS);
                 this->mqttPub->publishTempECS(tempECS);
             }
         }
 
-        //Extraction de la température du corps de chauffe
-        int decimalValue2 = trame[9] << 8 | trame[10];
-        float tempCDC = decimalValue2 / 10.0;
+        // Extraction de la température du corps de chauffe
+        decimalValue = trame[9] << 8 | trame[10];
+        tempCDC = decimalValue / 10.0;
         if (tempCDC != Chaudiere::getInstance().getTempCorpsDeChauffe()) {
             Chaudiere::getInstance().setTempCorpsDeChauffe(tempCDC);
             this->mqttPub->publishTempCorpsDeChauffe(tempCDC);
         }
 
-        // Extraction et mise à jour des valeurs de la zone 1
-        Zone* zone = getZone(Zone::ZONE1_ID);
-        
-        // Extraction de la température de départ et mise à jour de la zone
-        int decimalValue3 = trame[11] << 8 | trame[12];
-        float tempDepart = decimalValue3 / 10.0;
+        // Zone 1
+        zone = getZone(Zone::ZONE1_ID);
+        decimalValue = trame[11] << 8 | trame[12];
+        tempDepart = decimalValue / 10.0;
         if (zone->getTempDepart() != tempDepart) {
             zone->setTempDepart(tempDepart);
             this->mqttPub->publishTempDepart(tempDepart);
         }
-        
-        float tempAmbiante = byteToFloat(trame[43], trame[44]);
+        tempAmbiante = byteToFloat(trame[43], trame[44]);
         if (zone->getTempAmbiance() != tempAmbiante) {
             zone->setTempAmbiance(tempAmbiante);
             this->mqttPub->publishTempAmbiante(zone, tempAmbiante);
         }
-
-        float tempConsigne = byteToFloat(trame[55], trame[56]);
+        tempConsigne = byteToFloat(trame[55], trame[56]);
         if (zone->getTempConsigne() != tempConsigne) {
             zone->setTempConsigne(tempConsigne);
             this->mqttPub->publishTempConsigne(zone, tempConsigne);
         }
 
-        //TODO : récupérer les infos de la zone 2 et 3 si elles existent
+        // Zone 2
+        zone = getZone(Zone::ZONE2_ID);
+        decimalValue = trame[13] << 8 | trame[14];
+        tempDepart = decimalValue / 10.0;
+        if (zone->getTempDepart() != tempDepart) {
+            zone->setTempDepart(tempDepart);
+            this->mqttPub->publishTempDepart(tempDepart);
+        }
+        tempAmbiante = byteToFloat(trame[45], trame[46]);
+        if (zone->getTempAmbiance() != tempAmbiante) {
+            zone->setTempAmbiance(tempAmbiante);
+            this->mqttPub->publishTempAmbiante(zone, tempAmbiante);
+        }
+        tempConsigne = byteToFloat(trame[57], trame[58]);
+        if (zone->getTempConsigne() != tempConsigne) {
+            zone->setTempConsigne(tempConsigne);
+            this->mqttPub->publishTempConsigne(zone, tempConsigne);
+        }
+
+        // Zone 3
+        /*zone = getZone(Zone::ZONE3_ID);
+        decimalValue = trame[15] << 8 | trame[16];
+        tempDepart = decimalValue / 10.0;
+        if (zone->getTempDepart() != tempDepart) {
+            zone->setTempDepart(tempDepart);
+            this->mqttPub->publishTempDepart(tempDepart);
+        }
+        tempAmbiante = byteToFloat(trame[47], trame[48]);
+        if (zone->getTempAmbiance() != tempAmbiante) {
+            zone->setTempAmbiance(tempAmbiante);
+            this->mqttPub->publishTempAmbiante(zone, tempAmbiante);
+        }
+        tempConsigne = byteToFloat(trame[59], trame[60]);
+        if (zone->getTempConsigne() != tempConsigne) {
+            zone->setTempConsigne(tempConsigne);
+            this->mqttPub->publishTempConsigne(zone, tempConsigne);
+        }*/
+
+         // Extraction de la température extérieure
+        float temperatureExterieure = byteToFloat(trame[61], trame[62]);
+        if (temperatureExterieure != Chaudiere::getInstance().getTempExterieure()) {
+            Chaudiere::getInstance().setTempExterieure(temperatureExterieure);
+            mqttPub->publishTempExterieure(temperatureExterieure);
+        }
+
         VisioConnectPub::getInstance()->notifierReponse79e0();
     }
     // Ajout du décodage de la trame 7a18

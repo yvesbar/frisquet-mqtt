@@ -914,7 +914,7 @@ void handleRadioPacket(byte *byteArr, int len)
     if (len == 63)
     {
       if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg79e0 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
-      {
+      { //Migré
         if (sensorecs == true)
         {
           // Extract bytes 8 and 9 ECS
@@ -950,7 +950,7 @@ void handleRadioPacket(byte *byteArr, int len)
         publishMessage(TEMP_CONSIGNE1_TOPIC, tempconsignePayload);
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[3] == msg7a18 && byteArr[4] == 0x81 && byteArr[5] == 0x03)
-      {
+      { // migré
         // Extract bytes 28 and 29 conso gaz de la veille
         int decimalValue1 = byteArr[27] << 8 | byteArr[28];
         // float gazValue = decimalValue1;
@@ -969,6 +969,8 @@ void handleRadioPacket(byte *byteArr, int len)
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x08 && byteArr[5] == 0x17)
       {
+        //message de la chaudière vers le connect décrivant la nouveau mode/programmation hebdo
+        //cf https://github.com/Burnallover/frisquet-mqtt/wiki/trame-63-bytes
         TxByteArrConRep[2] = custom_friCon_id;
         TxByteArrConRep[3] = byteArr[3];
         TxByteArrConRep[4] = byteArr[4];
