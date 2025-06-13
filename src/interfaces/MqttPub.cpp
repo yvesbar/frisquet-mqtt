@@ -280,3 +280,24 @@ void MqttPub::publishTempExterieure(float temperature) {
     String value = String(temperature, 1); // Converti la température en chaîne avec 1 décimale
     client->publish(topic.c_str(), value.c_str());
 }
+
+void MqttPub::publishTempECS(float temperature) {
+    String topic = getConsoGazECSTopic();
+    char payload[10];
+    snprintf(payload, sizeof(payload), "%.1f", temperature);
+    client->publish(topic.c_str(), payload);
+}
+
+void MqttPub::publishTempCorpsDeChauffe(float temperature) {
+    String topic = getTempCorpsDeChauffeTopic();
+    char payload[10];
+    snprintf(payload, sizeof(payload), "%.1f", temperature);
+    client->publish(topic.c_str(), payload);
+}
+
+void MqttPub::publishTempDepart(float temperature) {
+    String topic = "homeassistant/sensor/frisquet/tempDepart/state";
+    char payload[10];
+    snprintf(payload, sizeof(payload), "%.1f", temperature);
+    client->publish(topic.c_str(), payload);
+}

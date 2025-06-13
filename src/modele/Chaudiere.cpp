@@ -46,17 +46,19 @@ Zone* Chaudiere::getZoneById(byte id) {
 }
 
 void Chaudiere::setTempExterieure(float value) {
-    DEBUG(F("Chaudiere - setTempExterieure : "));
-    DEBUGLN(value);
     if (value != tempExterieure) {
         tempExterieure = value;
     }
 }
 
 void Chaudiere::setTempCorpsDeChauffe(float value) {
-    DEBUG(F("Chaudiere - setTempCorpsDeChauffe : "));
-    DEBUGLN(value);
     if (value != tempCorpsDeChauffe) {
         tempCorpsDeChauffe = value;
+    }
+}
+
+void Chaudiere::setTempECS(float value) {
+    if (value != tempECS) {
+        tempECS = value;
     }
 }

@@ -8,6 +8,7 @@
 #include "ModuleHeltec.h"
 #include "../debug.h"
 #include "../Utils.h"
+#include "VisioConnectSub.h"
 
 class VisioConnectPub {
 public:
@@ -23,6 +24,9 @@ public:
 
     // Ajoute la méthode loop pour l'envoi cyclique des trames connect
     void loop();
+
+    // Méthode appelée par VisioConnectSub quand la réponse 79e0 est reçue
+    void notifierReponse79e0();
 
 private:
     VisioConnectPub(); // Constructeur privé pour le singleton

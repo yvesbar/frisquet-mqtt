@@ -1,5 +1,6 @@
 #include "VisioConnectSub.h"
 #include "../modele/ModuleH.h" // Include manquant pour ModuleH
+#include "VisioConnectPub.h"
 
 // Initialisation de la variable statique
 bool VisioConnectSub::receivedFlag = false;
@@ -57,6 +58,8 @@ void VisioConnectSub::lireTrame() {
                     break;
                 case 23: lireTrame23(byteArr);
                     break;
+                case 63: lireTrame63(byteArr);
+                    break;
                 default:
                     DEBUGLN(F("Trame non reconnue"));
                     break;
@@ -90,16 +93,8 @@ void VisioConnectSub::lireTrame23(byte* trame) {
     DEBUGLN(F("VisioConnectSub - +lireTrame23"));
 
     // Récupération de la zone. Si elle n'existe pas, on la crée et on pousse la conf HA pour la zone
-    Zone* zone = Chaudiere::getInstance().getZoneById(trame[1]);
-    if (zone == nullptr) {
-        zone = Chaudiere::getInstance().addZone(trame[1]);
-        if (zone == nullptr) {
-            DEBUGLN(F("Zone inconnue"));
-            return;
-        }
-        mqttPub->deployConfHAZone(zone); // Déploie la configuration HA pour la zone
-    }
-    
+    Zone* zone = getZone(trame[1]);
+   
     // Extraction de la température ambiante
     float temperatureValue = byteToFloat(trame[15], trame[16]);
     if (zone->getTempAmbiance() != temperatureValue) {
@@ -165,4 +160,73 @@ void VisioConnectSub::lireTrame49(byte* trame) {
     }
 
     DEBUGLN(F("VisioConnectSub - -lireTrame19"));
+}
+
+/** Indique qu'on attend une réponse à la trame 79e0 avec un numéroDeMessage bien précis */
+void VisioConnectSub::attendreTrame63_79e0(byte numeroMessage) {
+    idAttendu79e0 = numeroMessage;
+}
+
+/**
+ * Trame du visioConnect : trame d'infos
+ */
+void VisioConnectSub::lireTrame63(byte* trame) {
+    // On ne traite que les trames 79e0 (identifiants spécifiques)
+    if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == this->idAttendu79e0 && trame[4] == 0x81 && trame[5] == 0x03) {
+       
+        // Extraction de la température de l'ECS (Eau Chaude Sanitaire)
+        if (Chaudiere::getInstance().isEcsActive()) {
+            int decimalValue1 = trame[7] << 8 | trame[8];
+            float tempECS = decimalValue1 / 10.0;
+            // Sauvegarde et publication uniquement si la valeur a changé
+            if (tempECS != Chaudiere::getInstance().getTempECS()) {
+                Chaudiere::getInstance().setTempECS(tempECS);
+                this->mqttPub->publishTempECS(tempECS);
+            }
+        }
+
+        //Extraction de la température du corps de chauffe
+        int decimalValue2 = trame[9] << 8 | trame[10];
+        float tempCDC = decimalValue2 / 10.0;
+        if (tempCDC != Chaudiere::getInstance().getTempCorpsDeChauffe()) {
+            Chaudiere::getInstance().setTempCorpsDeChauffe(tempCDC);
+            this->mqttPub->publishTempCorpsDeChauffe(tempCDC);
+        }
+
+        int decimalValue3 = trame[11] << 8 | trame[12];
+        float tempDepart = decimalValue3 / 10.0;
+        this->mqttPub->publishTempDepart(tempDepart);
+        int decimalValueTemp = trame[43] << 8 | trame[44];
+
+        // Extraction et mise à jour des valeurs de la zone 1
+        Zone* zone = getZone(Zone::ZONE1_ID);
+        
+        float tempAmbiante = byteToFloat(trame[43], trame[44]);
+        if (zone->getTempAmbiance() != tempAmbiante) {
+            zone->setTempAmbiance(tempAmbiante);
+            this->mqttPub->publishTempAmbiante(zone, tempAmbiante);
+        }
+
+        float tempConsigne = byteToFloat(trame[55], trame[56]);
+        if (zone->getTempConsigne() != tempConsigne) {
+            zone->setTempConsigne(tempConsigne);
+            this->mqttPub->publishTempConsigne(zone, tempConsigne);
+        }
+
+        //TODO : récupérer les infos de la zone 2 et 3 si elles existent
+        VisioConnectPub::getInstance()->notifierReponse79e0();
+    }
+}
+
+Zone* VisioConnectSub::getZone(byte idZone) {
+    Zone* zone = Chaudiere::getInstance().getZoneById(Zone::ZONE1_ID);
+    if (zone == nullptr) {
+        zone = Chaudiere::getInstance().addZone(Zone::ZONE1_ID);
+        if (zone == nullptr) {
+            DEBUGLN(F("Zone inconnue"));
+            return;
+        }
+        this->mqttPub->deployConfHAZone(zone);
+    }
+    return zone;
 }

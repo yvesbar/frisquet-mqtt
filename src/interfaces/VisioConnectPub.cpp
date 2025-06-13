@@ -1,7 +1,6 @@
 #include "VisioConnectPub.h"
 
 
-
 VisioConnectPub* VisioConnectPub::instance = nullptr; // Initialisation de l'instance unique
 
 // Définition des variables statiques déclarées dans le .h
@@ -116,6 +115,7 @@ void VisioConnectPub::loop() {
         sequenceCourante = !sequenceCourante;
         millisDerniereEmissionSequence = now;
     }
+
     // Envoi un message toutes les 2 secondes s'il y en a à envoyer
     static unsigned long millisDerniereEmissionMessage = 0;
     if (now - millisDerniereEmissionMessage >= 2000) {
@@ -130,10 +130,21 @@ void VisioConnectPub::loop() {
             #ifdef DEBUG_ON
             Serial.printf("Envoi trame connect %d, num=%02X (seq %s)\n", idxMessageAEnvoyer, numeroMessage, sequenceCourante ? "A" : "B");
             #endif
+
+            // Si c'est la trame d'index 1, on attend la réponse 79e0
+            if (trameIdx == 1) {
+                extern VisioConnectSub* visioConnectSub;
+                if (visioConnectSub) {
+                    visioConnectSub->attendreTrame63_79e0(numeroMessage);
+                }
+            }
+
+            //Remet le module en mode réception
             ModuleHeltec::radio.startReceive();
+
             // Incrémente numeroMessage de 4 et gère le débordement
             numeroMessage += 4;
-            if (numeroMessage > 0xFF) numeroMessage = 0x03;
+            if (numeroMessage > 0xFF) { numeroMessage = 0x03; }
             idxMessageAEnvoyer++;
             millisDerniereEmissionMessage = now;
         }
@@ -144,5 +155,11 @@ void VisioConnectPub::loop() {
     //Le numéro de trame émise indique quel message on attends en retour. 
     //si c'est la trame 1 => cf var msg79e0 dans main.cpp.old
     //si c'est la trame 2 => cf var msg7a18 dans main.cpp.old
+}
+
+void VisioConnectPub::notifierReponse79e0() {
+
+//TODO a voir si utile de mettre en attente la méthode loop sur la réception de la trame ou pas
+
 }
 

@@ -23,10 +23,14 @@ class Chaudiere {
         
         void setTempCorpsDeChauffe(float value);
         float getTempCorpsDeChauffe() const { return tempCorpsDeChauffe; }; // Getter pour tempCorpsDeChauffe
+
+        void setTempECS(float value);
+        float getTempECS() const { return tempECS; } // Getter pour tempECS
         
         //TODO ajouter l'identifiant réseau
 
         static constexpr uint8_t idConnect = 0x7E;
+        bool isEcsActive() const { return ECS_ACTIF; }
 
     private:
         Chaudiere(); // Constructeur privé pour le singleton
@@ -36,6 +40,7 @@ class Chaudiere {
         std::map<byte, Zone*> zones;       // Tableau associatif des zones
         float tempExterieure;
         float tempCorpsDeChauffe;
+        float tempECS;
         
         //consoGazChauffage
         //consoGazECS

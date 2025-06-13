@@ -28,7 +28,7 @@ class MqttPub {
         //Permet de déployer la configuration d'auto conf HA
         void deployAutoDiscoveryHA();
 
-        //Stock un évènement pour le publiquer plus tard
+        //Stock un évènement pour le publiqué plus tard
         //void publishAsync(String topic, String value);
 
         //Publication des évènements en attente
@@ -38,6 +38,9 @@ class MqttPub {
         void publishTempAmbiante(Zone* zone, float temperature); // Publie la température ambiante
         void publishTempConsigne(Zone* zone, float temperature); // Publie la température de consigne
         void publishTempExterieure(float temperature); // Publie la température extérieure
+        void publishTempECS(float temperature);
+        void publishTempCorpsDeChauffe(float temperature);
+        void publishTempDepart(float temperature);
 
     private:
         static const String MQTT_HA_TOPIC_SENSOR;

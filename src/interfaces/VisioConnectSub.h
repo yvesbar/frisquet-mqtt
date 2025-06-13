@@ -30,14 +30,18 @@ class VisioConnectSub {
         static void setFlag(); // Méthode statique pour indiquer qu'un paquet a été reçu
         void lireTrame(); // Méthode pour lire et traiter une trame reçue
         static bool receivedFlag; // Drapeau pour indiquer qu'un paquet a été reçu
-
-    private:
+        void attendreTrame63_79e0(byte numeroMessage); // Méthode pour traiter une trame de 63 à 79 octets
+        
+        private:
         MqttPub* mqttPub;        // Référence à une instance de MqttPub
-
+        byte idAttendu79e0 = 0; // Variable d'instance pour l'ID attendu
+        
         void lireTrame23(byte* trame); // Méthode pour traiter une trame de 23 octets
         void lireTrame17(byte* trame); // Méthode pour traiter une trame de 17 octets
         void lireTrame49(byte* trame); // Méthode pour traiter une trame de 19 octets
+        void lireTrame63(byte* trame); // Décode les messages de 63 octets
         float byteToFloat(byte highByte, byte lowByte); // Conversion de bytes en float
+        Zone* getZone(byte idZone);
 };
 
 #endif // __VISIOCONNECT_SUB_H_
