@@ -10,6 +10,7 @@ Preferences ModuleHeltec::preferences; // Définition de la référence statique
  */
 void ModuleHeltec::initWifi(const char* ssid, const char* password) {
     WiFi.mode(WIFI_STA);
+    WiFi.setHostname("ESP32Frisquet");
     WiFi.begin(ssid, password);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.println("Connection Failed! Rebooting...");
@@ -20,6 +21,8 @@ void ModuleHeltec::initWifi(const char* ssid, const char* password) {
 
     DEBUG(F("INIT - Adresse IP : "));
     DEBUGLN(WiFi.localIP());
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
 }
 
 /**
@@ -76,7 +79,10 @@ void ModuleHeltec::initRadio() {
  * Initialisation de l'OTA
  */
 void ModuleHeltec::initOTA() {
+    DEBUGLN(F("ModuleHeltec - +initOTA"));
     ArduinoOTA.setHostname("ESP32Frisquet");
+    ArduinoOTA.setPassword("esp32frisquet"); // Définir le mot de passe pour l'OTA
+    ArduinoOTA.setPort(3232); // Port par défaut pour l'OTA
     ArduinoOTA.setTimeout(25); // Augmenter le délai d'attente à 25 secondes
     ArduinoOTA
         .onStart([]() {
@@ -100,4 +106,8 @@ void ModuleHeltec::initOTA() {
             else if (error == OTA_END_ERROR) DEBUGLN(F("End Failed"));
         });
     ArduinoOTA.begin();
+    DEBUGLN(F("ModuleHeltec - -initOTA"));
+}
+void ModuleHeltec::handleOTA() {
+     ArduinoOTA.handle();
 }

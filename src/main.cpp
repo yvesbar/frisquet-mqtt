@@ -33,12 +33,16 @@ void setup() {
 }
 
 void loop() {
-
+    ModuleHeltec::handleOTA();
     mqttPub->deployAutoDiscoveryHA();    
+ 
+    // Simulation frisquet connect
     visioConnectSub->lireTrame();
-
+    VisioConnectPub::getInstance()->loop();
+    
+    // Gesstion des messages MQTT
     mqttPub->loop();
     MqttSub::getInstance().loop();
 
-    //Ajouter le contenu de la méthode txfriConMsg
+    
 }

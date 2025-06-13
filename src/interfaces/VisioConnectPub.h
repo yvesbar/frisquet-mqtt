@@ -1,6 +1,8 @@
 #ifndef VISIOCONNECTPUB_H
 #define VISIOCONNECTPUB_H
 
+#define FRISQUET_CONNECT_TRAME_SIZE 10
+
 #include <Arduino.h>
 #include <RadioLib.h>
 #include "ModuleHeltec.h"
@@ -19,9 +21,30 @@ public:
         byte* trameAssociation, size_t tailleTrame
     );
 
+    // Ajoute la méthode loop pour l'envoi cyclique des trames connect
+    void loop();
+
 private:
     VisioConnectPub(); // Constructeur privé pour le singleton
     static VisioConnectPub* instance; // Pointeur vers l'instance unique
+
+    // Variables pour la gestion de l'envoi cyclique des trames vers le connect
+    static const int nbMessagesSequence = 4;
+    static const int sequenceA[4];
+    static const int sequenceB[4];
+    static bool sequenceMsg;
+    static bool sequenceCourante;
+    static byte TxByteArrCon0[10];
+    static byte TxByteArrCon1[10];
+    static byte TxByteArrCon2[10];
+    static byte TxByteArrCon3[10];
+    static byte TxByteArrCon4[10];
+    static byte* conMsgArrays[5];
+
+    // Variables d'état pour le loop
+    static int conMsgIndex;
+    static int idxMessageAEnvoyer;
+    static uint8_t numeroMessage;
 };
 
 #endif // VISIOCONNECTPUB_H

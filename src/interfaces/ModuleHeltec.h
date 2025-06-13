@@ -27,6 +27,7 @@ public:
 
     // Méthode statique pour initialiser l'OTA
     static void initOTA();
+    static void handleOTA();
 
     //gestion de la mémoire flash du module
     //TODO à gérer mais vu que c'est déjà dans le config.h, je ne sais pas si c'est utile
