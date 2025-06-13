@@ -104,6 +104,18 @@ void MqttPub::deployConfHAZone(Zone* zone) {
         client->publish((MQTT_HA_TOPIC_SELECT + zone->getNom() + "/mode/config").c_str(), ss.str().c_str(), true);
         ss.str("");
     
+        // Configuration du capteur de température de départ
+        ss << "{";
+        ss << "\"uniq_id\": \"frisquet_" << zone->getNom().c_str() << "_tempDepart\",";
+        ss << "\"name\": \"Frisquet - " << zone->getNom().c_str() << " - Temperature départ\",";
+        ss << "\"state_topic\": \"" << getZoneTempDepartTopic(zone->getNom()).c_str() << "\",";
+        ss << "\"unit_of_measurement\": \"°C\",";
+        ss << "\"device_class\": \"temperature\",";
+        ss << MQTT_HA_DEVICE_ID;
+        ss << "}";
+        client->publish((MQTT_HA_TOPIC_SENSOR + zone->getNom().c_str() + "/tempDepart/config").c_str(), ss.str().c_str());
+        ss.str("");
+    
         DEBUGLN(F("MQTT - -deployConfHAZone"));
     }
     DEBUGLN(F("MQTT - -deployConfHAZone"));
@@ -164,7 +176,7 @@ void MqttPub::deployConfHAChaudiere() {
         ss << "\"unit_of_measurement\": \"kWh\",";
         ss << "\"device_class\": \"energy\",";
         ss << "\"state_class\": \"total_increasing\",";
-        ss << MQTT_HA_DEVICE_ID;
+    ss << MQTT_HA_DEVICE_ID;
         ss << "}";
         client->publish((MQTT_HA_TOPIC_SENSOR + "consogaz-ecs/config").c_str(), ss.str().c_str());
         ss.str("");
@@ -251,6 +263,10 @@ String MqttPub::getTempCorpsDeChauffeTopic() {
     return mqttRootNode + "/tempCorpsDeChauffe";
 }
 
+String MqttPub::getZoneTempDepartTopic(String nomZoneMqtt) {
+    return mqttRootNode + "/" + nomZoneMqtt + "/tempDepart";
+}
+
 void MqttPub::loop() {
     if (!client->connected()) {
         DEBUGLN(F("MQTT - Client déconnecté, tentative de reconnexion..."));
@@ -295,9 +311,22 @@ void MqttPub::publishTempCorpsDeChauffe(float temperature) {
     client->publish(topic.c_str(), payload);
 }
 
+//TODO associer cette température de départ à la zone 1
 void MqttPub::publishTempDepart(float temperature) {
-    String topic = "homeassistant/sensor/frisquet/tempDepart/state";
+    String topic = "homeassistant/sensor/frisquet/tempDepart";
     char payload[10];
     snprintf(payload, sizeof(payload), "%.1f", temperature);
     client->publish(topic.c_str(), payload);
+}
+
+void MqttPub::publishConsoGazCh(int value) {
+    char payload[10];
+    snprintf(payload, sizeof(payload), "%d", value);
+    client->publish(getConsoGazChauffageTopic().c_str(), payload);
+}
+
+void MqttPub::publishConsoGazECS(int value) {
+    char payload[10];
+    snprintf(payload, sizeof(payload), "%d", value);
+    client->publish(getConsoGazECSTopic().c_str(), payload);
 }

@@ -27,6 +27,7 @@ public:
 
     // Méthode appelée par VisioConnectSub quand la réponse 79e0 est reçue
     void notifierReponse79e0();
+    void notifierReponse7a18();
 
 private:
     VisioConnectPub(); // Constructeur privé pour le singleton

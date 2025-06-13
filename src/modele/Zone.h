@@ -39,7 +39,9 @@ class Zone {
         Mode getMode() const { return mode; }
         void setMode (Mode valeur) { mode = valeur; }
 
- 
+        /* Température de départ */
+        float getTempDepart() const { return tempDepart; }
+        void setTempDepart(float valeur) { tempDepart = valeur; }
         
     private:
         //Identifiant de zone
@@ -48,6 +50,7 @@ class Zone {
 
         float tempConsigne;
         float tempAmbiance;
+        float tempDepart;
         Mode mode;
 };
 

@@ -163,3 +163,7 @@ void VisioConnectPub::notifierReponse79e0() {
 
 }
 
+void VisioConnectPub::notifierReponse7a18() {
+//TODO a voir si utile de mettre en attente la méthode loop sur la réception de la trame ou pas
+}
+

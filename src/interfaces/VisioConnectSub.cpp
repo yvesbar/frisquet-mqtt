@@ -167,13 +167,18 @@ void VisioConnectSub::attendreTrame63_79e0(byte numeroMessage) {
     idAttendu79e0 = numeroMessage;
 }
 
+void VisioConnectSub::attendreTrame63_7a18(byte numeroMessage) {
+    idAttendu7a18 = numeroMessage;
+}
+
 /**
  * Trame du visioConnect : trame d'infos
  */
 void VisioConnectSub::lireTrame63(byte* trame) {
     // On ne traite que les trames 79e0 (identifiants spécifiques)
-    if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == this->idAttendu79e0 && trame[4] == 0x81 && trame[5] == 0x03) {
-       
+    if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == idAttendu79e0 && trame[4] == 0x81 && trame[5] == 0x03) {
+        idAttendu79e0 = 0;
+
         // Extraction de la température de l'ECS (Eau Chaude Sanitaire)
         if (Chaudiere::getInstance().isEcsActive()) {
             int decimalValue1 = trame[7] << 8 | trame[8];
@@ -193,13 +198,16 @@ void VisioConnectSub::lireTrame63(byte* trame) {
             this->mqttPub->publishTempCorpsDeChauffe(tempCDC);
         }
 
-        int decimalValue3 = trame[11] << 8 | trame[12];
-        float tempDepart = decimalValue3 / 10.0;
-        this->mqttPub->publishTempDepart(tempDepart);
-        int decimalValueTemp = trame[43] << 8 | trame[44];
-
         // Extraction et mise à jour des valeurs de la zone 1
         Zone* zone = getZone(Zone::ZONE1_ID);
+        
+        // Extraction de la température de départ et mise à jour de la zone
+        int decimalValue3 = trame[11] << 8 | trame[12];
+        float tempDepart = decimalValue3 / 10.0;
+        if (zone->getTempDepart() != tempDepart) {
+            zone->setTempDepart(tempDepart);
+            this->mqttPub->publishTempDepart(tempDepart);
+        }
         
         float tempAmbiante = byteToFloat(trame[43], trame[44]);
         if (zone->getTempAmbiance() != tempAmbiante) {
@@ -216,8 +224,24 @@ void VisioConnectSub::lireTrame63(byte* trame) {
         //TODO : récupérer les infos de la zone 2 et 3 si elles existent
         VisioConnectPub::getInstance()->notifierReponse79e0();
     }
+    // Ajout du décodage de la trame 7a18
+    else if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == idAttendu7a18 && trame[4] == 0x81 && trame[5] == 0x03) {
+        idAttendu7a18 = 0;
+        // Extraction et publication des consommations gaz
+        int decimalValue1 = trame[27] << 8 | trame[28];
+        this->mqttPub->publishConsoGazCh(decimalValue1);
+        
+        if (Chaudiere::getInstance().isEcsActive()) {
+            int decimalValue2 = trame[25] << 8 | trame[26];
+            this->mqttPub->publishConsoGazECS(decimalValue2);
+        }
+        VisioConnectPub::getInstance()->notifierReponse7a18();
+    }
 }
 
+/**
+ * Récupère une zone ou la créé la première fois qu'une trame la concernant est décodée
+ */
 Zone* VisioConnectSub::getZone(byte idZone) {
     Zone* zone = Chaudiere::getInstance().getZoneById(Zone::ZONE1_ID);
     if (zone == nullptr) {

@@ -19,3 +19,9 @@ void Zone::setTempAmbiance(float valeur) {
     tempAmbiance = valeur;
     DEBUGLN(F("Zone - -setTempAmbiance"));
 }
+
+void Zone::setTempDepart(float valeur) {
+    DEBUGLN(F("Zone - +setTempDepart"));
+    tempDepart = valeur;
+    DEBUGLN(F("Zone - -setTempDepart"));
+}

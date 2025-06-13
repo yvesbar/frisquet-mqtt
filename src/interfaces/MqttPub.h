@@ -41,6 +41,8 @@ class MqttPub {
         void publishTempECS(float temperature);
         void publishTempCorpsDeChauffe(float temperature);
         void publishTempDepart(float temperature);
+        void publishConsoGazCh(int value);
+        void publishConsoGazECS(int value);
 
     private:
         static const String MQTT_HA_TOPIC_SENSOR;
@@ -61,6 +63,7 @@ class MqttPub {
         String getConsoGazChauffageTopic();
         String getConsoGazECSTopic();
         String getTempCorpsDeChauffeTopic();
+        String getZoneTempDepartTopic(String nomZoneMqtt);
 };
 
 #endif  //__MQTT_PUB_H_
