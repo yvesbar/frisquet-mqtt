@@ -33,7 +33,7 @@ class VisioConnectSub {
         void attendreTrame63_79e0(byte numeroMessage); // Méthode pour traiter une trame de 63 à 79 octets
         void attendreTrame63_7a18(byte numeroMessage); // Méthode pour traiter une trame de 63 à 7a octets
         
-        private:
+    private:
         MqttPub* mqttPub;        // Référence à une instance de MqttPub
         byte idAttendu79e0 = 0; // Variable d'instance pour l'ID attendu
         byte idAttendu7a18 = 0; // Variable d'instance pour l'ID attendu trame 7a18
@@ -44,6 +44,8 @@ class VisioConnectSub {
         void lireTrame63(byte* trame); // Décode les messages de 63 octets
         void decodeTrame63_infosCapteurs(byte* trame);
         void decodeTrame63_infosConso(byte* trame);
+        void decodeTrame63_infosZone(byte* trame, byte zoneId);
+
         float bytesToTemperature(byte highByte, byte lowByte); // Conversion de bytes en température
         Zone* getZone(byte idZone);
 };

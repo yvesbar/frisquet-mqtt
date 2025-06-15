@@ -175,18 +175,32 @@ void VisioConnectSub::attendreTrame63_7a18(byte numeroMessage) {
  * Trame du visioConnect : trame d'infos
  */
 void VisioConnectSub::lireTrame63(byte* trame) {
-    // On ne traite que les trames 79e0 (identifiants spécifiques)
+    // Trame réponse à 79e0 : les températures
     if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == idAttendu79e0 && trame[4] == 0x81 && trame[5] == 0x03) {
         idAttendu79e0 = 0;
         decodeTrame63_infosCapteurs(trame);
         VisioConnectPub::getInstance()->notifierReponse79e0();
     }
-    // Ajout du décodage de la trame 7a18
+    // Trame réponse à 7a18 : les infos de consommation
     else if (trame[0] == 0x7e && trame[1] == 0x80 && trame[3] == idAttendu7a18 && trame[4] == 0x81 && trame[5] == 0x03) {
         idAttendu7a18 = 0;
         decodeTrame63_infosConso(trame);
         VisioConnectPub::getInstance()->notifierReponse7a18();
     }
+    //Info zone 1
+    else if (trame[0] == 0x7e && trame[1] == 0x80 && trame[4] == Zone::ZONE1_ID && trame[5] == 0x17) {
+        decodeTrame63_infosZone(trame, Zone::ZONE1_ID);
+    }
+    //Info zone 2
+    else if (trame[0] == 0x7e && trame[1] == 0x80 && trame[4] == Zone::ZONE2_ID && trame[5] == 0x17) {
+        decodeTrame63_infosZone(trame, Zone::ZONE2_ID);
+    }
+    //Info zone 3
+    else if (trame[0] == 0x7e && trame[1] == 0x80 && trame[4] == Zone::ZONE3_ID && trame[5] == 0x17) {
+        decodeTrame63_infosZone(trame, Zone::ZONE3_ID);
+    }
+
+
 }
 
 
@@ -305,4 +319,40 @@ void VisioConnectSub::decodeTrame63_infosConso(byte* trame) {
         int decimalValue2 = trame[25] << 8 | trame[26];
         this->mqttPub->publishConsoGazECS(decimalValue2);
     }
+}
+
+
+/**
+ * Message de la chaudière vers le connect décrivant le nouveau mode/programmation hebdo
+ */
+void VisioConnectSub::decodeTrame63_infosZone(byte* trame, byte zoneId) {
+    Zone* zone = getZone(zoneId);
+
+
+
+//Ancien code 
+
+//message de la chaudière vers le connect décrivant le nouveau mode/programmation hebdo
+        //cf https://github.com/Burnallover/frisquet-mqtt/wiki/trame-63-bytes
+        TxByteArrConRep[2] = custom_friCon_id;
+        TxByteArrConRep[3] = byteArr[3];
+        TxByteArrConRep[4] = byteArr[4];
+        memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
+        memcpy(&TxByteArrConMod[15], &byteArr[15], 48); // Copie 48 octets depuis byteArr[15] dans TxByteArrConMod[7]
+
+        // Envoi de la confirmation de reception
+        int State = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
+        if (State == RADIOLIB_ERR_NONE)
+        {
+          //  Appeler adaptMod avec la valeur extraite de byteArr[10]
+          uint8_t modeValue = TxByteArrConRep[10];
+          uint8_t zone = TxByteArrConRep[4];
+          adaptMod(modeValue,zone);
+        }
+        else
+        {
+          DBG_PRINTLN("Erreur lors de la transmission !");
+        }
+
+
 }
