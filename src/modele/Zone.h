@@ -29,11 +29,11 @@ class Zone {
 
         /* Température de consigne */
         float getTempConsigne() const { return tempConsigne; }
-        void setTempConsigne(float valeur);
+        void setTempConsigne(float valeur) { tempConsigne = valeur; }
         
         /* Température d'Ambiance */
         float getTempAmbiance() const { return tempAmbiance; }
-        void setTempAmbiance(float valeur);
+        void setTempAmbiance(float valeur){ tempAmbiance = valeur; }
         
         /* Mode */
         Mode getMode() const { return mode; }

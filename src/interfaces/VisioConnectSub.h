@@ -42,7 +42,9 @@ class VisioConnectSub {
         void lireTrame17(byte* trame); // Méthode pour traiter une trame de 17 octets
         void lireTrame49(byte* trame); // Méthode pour traiter une trame de 19 octets
         void lireTrame63(byte* trame); // Décode les messages de 63 octets
-        float byteToFloat(byte highByte, byte lowByte); // Conversion de bytes en float
+        void decodeTrame63_infosCapteurs(byte* trame);
+        void decodeTrame63_infosConso(byte* trame);
+        float bytesToTemperature(byte highByte, byte lowByte); // Conversion de bytes en température
         Zone* getZone(byte idZone);
 };
 
