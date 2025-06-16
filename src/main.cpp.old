@@ -969,7 +969,7 @@ void handleRadioPacket(byte *byteArr, int len)
       }
       else if (byteArr[0] == 0x7e && byteArr[1] == 0x80 && byteArr[4] == 0x08 && byteArr[5] == 0x17)
       {
-        //message de la chaudière vers le connect décrivant la nouveau mode/programmation hebdo
+        //message de la chaudière vers le connect décrivant le nouveau mode/programmation hebdo
         //cf https://github.com/Burnallover/frisquet-mqtt/wiki/trame-63-bytes
         TxByteArrConRep[2] = custom_friCon_id;
         TxByteArrConRep[3] = byteArr[3];

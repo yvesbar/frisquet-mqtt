@@ -10,6 +10,7 @@
 #include "image.h"
 #include "../debug.h"
 #include "../config.h"
+#include "../modele/Connect.h"
 
 class ModuleHeltec {
 public:
@@ -31,8 +32,10 @@ public:
 
     //gestion de la mémoire flash du module
     //TODO à gérer mais vu que c'est déjà dans le config.h, je ne sais pas si c'est utile
-    //static void initNvs();
-    //static void eraseNvs();
+    static void initNVS();
+
+    static void saveIdConnect(byte id);
+    static byte loadIdConnect();
 
     static SX1262 radio;
 

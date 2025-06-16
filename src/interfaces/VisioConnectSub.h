@@ -16,6 +16,7 @@
 #include <string>
 #include "../modele/Chaudiere.h"
 #include "../modele/ModuleH.h"
+#include "../modele/Connect.h"
 #include "MqttPub.h"
 #include "ModuleHeltec.h"
 

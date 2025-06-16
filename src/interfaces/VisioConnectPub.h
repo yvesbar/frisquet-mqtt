@@ -9,6 +9,7 @@
 #include "../debug.h"
 #include "../Utils.h"
 #include "VisioConnectSub.h"
+#include "../modele/Connect.h"
 
 class VisioConnectPub {
 public:
@@ -28,6 +29,9 @@ public:
     // Méthode appelée par VisioConnectSub quand la réponse 79e0 est reçue
     void notifierReponse79e0();
     void notifierReponse7a18();
+
+    // Envoie une trame déjà construite
+    bool envoyerTrame(byte* trame, size_t tailleTrame = 10);
 
 private:
     VisioConnectPub(); // Constructeur privé pour le singleton

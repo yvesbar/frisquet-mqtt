@@ -108,6 +108,30 @@ void ModuleHeltec::initOTA() {
     ArduinoOTA.begin();
     DEBUGLN(F("ModuleHeltec - -initOTA"));
 }
+
+/**
+ * Charge les préférences NVS dans les objets concernés
+ */
+void ModuleHeltec::initNVS() {
+    if (connect_id != 0x00) {
+        saveIdConnect(connect_id);
+    }
+}
+
+
 void ModuleHeltec::handleOTA() {
      ArduinoOTA.handle();
+}
+
+void ModuleHeltec::saveIdConnect(byte id) {
+    preferences.begin("frisquet", false);
+    preferences.putUChar("idConnect", id);
+    preferences.end();
+}
+
+byte ModuleHeltec::loadIdConnect() {
+    preferences.begin("frisquet", true);
+    byte id = preferences.getUChar("idConnect", 0); // 0 par défaut si non trouvé
+    preferences.end();
+    return id;
 }

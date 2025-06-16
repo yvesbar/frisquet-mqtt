@@ -81,6 +81,12 @@ bool VisioConnectPub::associerModule(byte* trameAssociation, size_t tailleTrame)
     trameAssociation[6] = byteArr[6];
 
     uint8_t deviceId = byteArr[2]; // ID du device à associer
+
+    // Sauvegarde dans la NVS et mise à jour du singleton Connect
+    ModuleHeltec::saveIdConnect(deviceId);
+    Connect::getInstance()->setIdConnect(deviceId);
+
+    ModuleHeltec::affiche("deviceID : " + Utils::byteArrayToHexString(&deviceId, 1));
     #ifdef DEBUG_ON
         DEBUG(F("ID du device à associer : "));
         Serial.printf("%02X ", deviceId);
@@ -89,16 +95,13 @@ bool VisioConnectPub::associerModule(byte* trameAssociation, size_t tailleTrame)
 
 
     // Envoi de la trame de réponse à l'association
-    int txState = ModuleHeltec::radio.transmit(trameAssociation, tailleTrame);
-    if (txState != RADIOLIB_ERR_NONE) {
+    bool txState = envoyerTrame(trameAssociation, tailleTrame);
+    if (txState != true) {
         ModuleHeltec::affiche("Erreur tx association)");
-        return false;
     }
 
-    ModuleHeltec::radio.startReceive();
-
     DEBUGLN(F("VisioConnectPub - -associerModule"));
-    return true;
+    return txState;
 }
 
 /**
@@ -125,12 +128,12 @@ void VisioConnectPub::loop() {
             int trameIdx = sequence[idxMessageAEnvoyer];
             // Met à jour les champs dynamiques de la trame
             conMsgArrays[trameIdx][3] = numeroMessage;
-            // Envoi la trame
-            ModuleHeltec::radio.transmit(conMsgArrays[trameIdx], FRISQUET_CONNECT_TRAME_SIZE);
+            
             #ifdef DEBUG_ON
             Serial.printf("Envoi trame connect %d, num=%02X (seq %s)\n", idxMessageAEnvoyer, numeroMessage, sequenceCourante ? "A" : "B");
             #endif
 
+            
             // Si c'est la trame d'index 1, on attend la réponse 79e0
             if (trameIdx == 1) {
                 extern VisioConnectSub* visioConnectSub;
@@ -138,9 +141,15 @@ void VisioConnectPub::loop() {
                     visioConnectSub->attendreTrame63_79e0(numeroMessage);
                 }
             }
-
-            //Remet le module en mode réception
-            ModuleHeltec::radio.startReceive();
+            // Si c'est la trame d'index 2, on attend la réponse 79e0
+            if (trameIdx == 2) {
+                extern VisioConnectSub* visioConnectSub;
+                if (visioConnectSub) {
+                    visioConnectSub->attendreTrame63_7a18(numeroMessage);
+                }
+            }
+            
+            envoyerTrame(conMsgArrays[trameIdx], FRISQUET_CONNECT_TRAME_SIZE);
 
             // Incrémente numeroMessage de 4 et gère le débordement
             numeroMessage += 4;
@@ -149,12 +158,6 @@ void VisioConnectPub::loop() {
             millisDerniereEmissionMessage = now;
         }
     }
-
-
-    //gérer le fait que quand on envoi une trame, la chaudière va y répondre.
-    //Le numéro de trame émise indique quel message on attends en retour. 
-    //si c'est la trame 1 => cf var msg79e0 dans main.cpp.old
-    //si c'est la trame 2 => cf var msg7a18 dans main.cpp.old
 }
 
 void VisioConnectPub::notifierReponse79e0() {
@@ -165,5 +168,19 @@ void VisioConnectPub::notifierReponse79e0() {
 
 void VisioConnectPub::notifierReponse7a18() {
 //TODO a voir si utile de mettre en attente la méthode loop sur la réception de la trame ou pas
+}
+
+bool VisioConnectPub::envoyerTrame(byte* trame, size_t tailleTrame) {
+    // Utilise la radio pour envoyer la trame telle quelle
+    int state = ModuleHeltec::radio.transmit(trame, tailleTrame);
+    
+    //Remet le module en mode réception
+    ModuleHeltec::radio.startReceive();
+
+    if (state == RADIOLIB_ERR_NONE) {
+        return true;
+    } else {
+        return false;
+    }
 }
 

@@ -15,8 +15,9 @@ class Zone {
         static const byte ZONE2_ID = 0x09;
         static const byte ZONE3_ID = 0x0a;
         enum Mode {
-            JOUR,
-            NUIT,
+            AUTO,
+            CONFORT,
+            REDUIT,
             HORS_GEL
         };
 

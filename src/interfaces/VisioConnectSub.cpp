@@ -324,35 +324,77 @@ void VisioConnectSub::decodeTrame63_infosConso(byte* trame) {
 
 /**
  * Message de la chaudière vers le connect décrivant le nouveau mode/programmation hebdo
+ * Je pense que cette trame est envoyée de la chaudière vers le connect pour informer du nouveau mode ou de la programmation hebdomadaire.
  */
 void VisioConnectSub::decodeTrame63_infosZone(byte* trame, byte zoneId) {
+    byte reponse[49] = {
+        0x80, 0x7E, 0x39, 0x18, 0x88, 0x17, 0x2A, 0x91, 0x6E, 0x1E, 0x05, 0x21, 0x00, 0x00, 0xE0, 0xFF,
+        0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
+        0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0xFF,
+        0x1F};
+        
     Zone* zone = getZone(zoneId);
+    
+    reponse[2] = Connect::getInstance().getId();
+    
+    //Réponse à un message, on recopie donc son numéro
+    reponse[3] = trame[3]; 
+
+    // Identifiant de la zone
+    reponse[4] = zoneId;   
+
+    // Recopie d'un bout du message d'origine dans la réponse (les octets 15 à 46)
+    memcpy(&reponse[7], &trame[15], 41);
+
+    // Envoi de la confirmation de réception
+    bool state = VisioConnectPub::getInstance()->envoyerTrame(reponse, sizeof(reponse));
+
+    if (state) {
+        bool isZoneModeChanged = false;
+        switch (trame[18]) {
+            case 0x05:
+                if (zone->getMode() != Zone::Mode::AUTO) {
+                    zone->setMode(Zone::Mode::AUTO);
+                    isZoneModeChanged = true;
+                }
+                break;
+            case 0x06:
+                if (zone->getMode() != Zone::Mode::CONFORT) {
+                    zone->setMode(Zone::Mode::CONFORT);
+                    isZoneModeChanged = true;
+                }
+                break;
+            case 0x07:
+                if (zone->getMode() != Zone::Mode::REDUIT) {
+                    zone->setMode(Zone::Mode::REDUIT);
+                    isZoneModeChanged = true;
+                }
+                break;
+            case 0x08:
+                 if (zone->getMode() != Zone::Mode::HORS_GEL) {
+                    zone->setMode(Zone::Mode::HORS_GEL);
+                    isZoneModeChanged = true;
+                 }    
+                break;
+        }
+
+        // Si le mode de la zone a changé, on publie le nouveau mode vers HA
+        if (isZoneModeChanged) {
+            mqttPub->publishZoneMode(zone);
+        }
+    }
+    else {
+        DEBUGLN("Erreur lors de la transmission !");
+    }
+
+
+
 
 
 
 //Ancien code 
-
-//message de la chaudière vers le connect décrivant le nouveau mode/programmation hebdo
-        //cf https://github.com/Burnallover/frisquet-mqtt/wiki/trame-63-bytes
-        TxByteArrConRep[2] = custom_friCon_id;
-        TxByteArrConRep[3] = byteArr[3];
-        TxByteArrConRep[4] = byteArr[4];
-        memcpy(&TxByteArrConRep[7], &byteArr[15], 41); // Copie 41 octets depuis byteArr[15] dans TxByteArrConRep[7]
+        //Garde la programmation courante si jamais on veut la changer à partir de HA
         memcpy(&TxByteArrConMod[15], &byteArr[15], 48); // Copie 48 octets depuis byteArr[15] dans TxByteArrConMod[7]
-
-        // Envoi de la confirmation de reception
-        int State = radio.transmit(TxByteArrConRep, sizeof(TxByteArrConRep));
-        if (State == RADIOLIB_ERR_NONE)
-        {
-          //  Appeler adaptMod avec la valeur extraite de byteArr[10]
-          uint8_t modeValue = TxByteArrConRep[10];
-          uint8_t zone = TxByteArrConRep[4];
-          adaptMod(modeValue,zone);
-        }
-        else
-        {
-          DBG_PRINTLN("Erreur lors de la transmission !");
-        }
 
 
 }

@@ -47,10 +47,7 @@ void MqttPub::deployAutoDiscoveryHA() {
         //deployConfHAZone(chaudiere->getZone2());
         //deployConfHAZone(chaudiere->getZone3());
         
-        //TODO à tester
         deployConfHAtempExt();
-        
-        //TODO à tester :
         deployConfHAChaudiere();
         deployConfHASwitchAssociationConnect();
 
@@ -96,8 +93,8 @@ void MqttPub::deployConfHAZone(Zone* zone) {
         ss << "{";
         ss << "\"uniq_id\": \"frisquet_" << zone->getNom().c_str() << "_mode\",";
         ss << "\"name\": \"Frisquet - " << zone->getNom().c_str() << " mode\",";
-        ss << "\"state_topic\": \"" << mqttRootNode << "/" << zone->getNom().c_str() << "/mode/state\",";
-        ss << "\"command_topic\": \"" << mqttRootNode << "/" << zone->getNom().c_str() << "/mode/set\",";
+        ss << "\"state_topic\": \"" << getZoneModeStateTopic(zone->getNom()).c_str() <<"\",";
+        ss << "\"command_topic\": \"" << getZoneModeCommandTopic(zone->getNom()).c_str() <<"\",";
         ss << "\"options\": [\"Auto\", \"Confort\", \"Réduit\", \"Hors gel\"],";
         ss << MQTT_HA_DEVICE_ID;
         ss << "}";
@@ -267,6 +264,14 @@ String MqttPub::getZoneTempDepartTopic(String nomZoneMqtt) {
     return mqttRootNode + "/" + nomZoneMqtt + "/tempDepart";
 }
 
+String MqttPub::getZoneModeStateTopic(String nomZoneMqtt) {
+    return MQTT_HA_TOPIC_SELECT + nomZoneMqtt + "/mode/state";
+}
+
+String MqttPub::getZoneModeCommandTopic(String nomZoneMqtt) {
+    return MQTT_HA_TOPIC_SELECT + nomZoneMqtt + "/mode/command";
+}
+
 void MqttPub::loop() {
     if (!client->connected()) {
         DEBUGLN(F("MQTT - Client déconnecté, tentative de reconnexion..."));
@@ -329,4 +334,30 @@ void MqttPub::publishConsoGazECS(int value) {
     char payload[10];
     snprintf(payload, sizeof(payload), "%d", value);
     client->publish(getConsoGazECSTopic().c_str(), payload);
+}
+
+
+/**
+ * Publie le mode de la zone dans le topic approprié
+ * @param zone Pointeur vers l'objet Zone dont on veut publier le mode
+ */
+void MqttPub::publishZoneMode(Zone* zone) {
+    String topic = MQTT_HA_TOPIC_SENSOR + zone->getNom() + "/mode";
+    String modeStr;
+    switch (zone->getMode()) {
+        case Zone::CONFORT:
+            modeStr = "Confort";
+            break;
+        case Zone::REDUIT:
+            modeStr = "Réduit";
+            break;
+        case Zone::HORS_GEL:
+            modeStr = "Hors gel";
+            break;
+        case Zone::AUTO:
+        default:
+            modeStr = "Auto";
+            break;
+    }
+    client->publish(getZoneModeCommandTopic(zone->getNom()).c_str(), modeStr.c_str());
 }

@@ -11,6 +11,7 @@ static const char* mqttPassword = ""; // Mettre votre mot de passe MQTT
 static const String mqttRootNode = "frisquet"; // noeud MQTT dans lequel publier les valeurs
 
 static uint8_t network_id[] = {0x05, 0xDD, 0xCF, 0x7F}; // Remplacer NN par le network id de la chaudière
+static uint8_t connect_id = 0x00; // Remplacer 00 par l'identifiant du connect
 
 //Nom des zones (pour mqtt)
 static const String ZONE1_NOM = "premier";

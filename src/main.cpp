@@ -12,14 +12,16 @@ VisioConnectSub* visioConnectSub;
 void setup() {
     DEBUG_INIT
 
-    //TODO init de la chaudière avec network_id, frisquet connect, etc... à partir des constantes de config.h
-
+    
     ModuleHeltec::initWifi(ssid, password);
     ModuleHeltec::initRadio();
     ModuleHeltec::initAffichage();
     ModuleHeltec::initOTA();
+    ModuleHeltec::initNVS();
 
-
+    //TODO init de la chaudière avec network_id, frisquet connect, etc... à partir des constantes de config.h
+    Connect::getInstance().setId(ModuleHeltec::loadIdConnect());
+    
     // Création des connexions MQTT
     mqttPub = new MqttPub();
     mqttPub->init();
