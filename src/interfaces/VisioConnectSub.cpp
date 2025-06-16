@@ -382,19 +382,22 @@ void VisioConnectSub::decodeTrame63_infosZone(byte* trame, byte zoneId) {
         if (isZoneModeChanged) {
             mqttPub->publishZoneMode(zone);
         }
+
+        // Extraction des températures de confort, réduit, hors gel
+        zone->setTempConfort(bytesToTemperature(trame[15], 0));
+        zone->setTempReduit(bytesToTemperature(trame[16], 0)); 
+        zone->setTempHorsGel(bytesToTemperature(trame[17], 0));
+
+        // Programmation hebdomadaire (6 octets par jour, dimanche=21 à 26, samedi=57 à 62)
+        for (int i = 0; i < 7; ++i) {
+            int start = 21 + i * 6;
+            zone->setProgrammationJour(static_cast<Zone::JourSemaine>(i), &trame[start]);
+        }
+
+        //TODO sauvegarder la configuration de la zone dans la mémoire flash
+        //Lors de la création de la zone, aller récupérer les valeurs dans la mémoire flash
     }
     else {
         DEBUGLN("Erreur lors de la transmission !");
     }
-
-
-
-
-
-
-//Ancien code 
-        //Garde la programmation courante si jamais on veut la changer à partir de HA
-        memcpy(&TxByteArrConMod[15], &byteArr[15], 48); // Copie 48 octets depuis byteArr[15] dans TxByteArrConMod[7]
-
-
 }

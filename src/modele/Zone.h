@@ -20,6 +20,15 @@ class Zone {
             REDUIT,
             HORS_GEL
         };
+        enum JourSemaine {
+            DIMANCHE = 0,
+            LUNDI = 1,
+            MARDI = 2,
+            MERCREDI = 3,
+            JEUDI = 4,
+            VENDREDI = 5,
+            SAMEDI = 6
+        };
 
         /* Constructeur avec id de zone */
         Zone(byte, String);
@@ -44,6 +53,24 @@ class Zone {
         float getTempDepart() const { return tempDepart; }
         void setTempDepart(float valeur) { tempDepart = valeur; }
         
+        /* Température de confort */
+        float getTempConfort() const { return tempConfort; }
+        void setTempConfort(float valeur) { tempConfort = valeur; }
+
+        /* Température réduit */
+        float getTempReduit() const { return tempReduit; }
+        void setTempReduit(float valeur) { tempReduit = valeur; }
+
+        /* Température hors gel */
+        float getTempHorsGel() const { return tempHorsGel; }
+        void setTempHorsGel(float valeur) { tempHorsGel = valeur; }
+
+        /* Programmation hebdomadaire (6 octets par jour, 7 jours) */
+        void setProgrammationJour(JourSemaine jour, const uint8_t* prog) {
+            memcpy(programmation[jour], prog, 6);
+        }
+        const uint8_t* getProgrammationJour(JourSemaine jour) const { return programmation[jour]; }
+
     private:
         //Identifiant de zone
         byte idZone;
@@ -53,6 +80,10 @@ class Zone {
         float tempAmbiance;
         float tempDepart;
         Mode mode;
+        float tempConfort;
+        float tempReduit;
+        float tempHorsGel;
+        uint8_t programmation[7][6]; // 7 jours, 6 octets par jour
 };
 
 #endif //__ZONE_H_
