@@ -4,7 +4,6 @@ les températures sont encodées en tant qu'entiers signés sur 16 bits, avec un
 
 | Byte | Value | Description | Comment |
 |---|---|---|---|
-| 0 | | Nombre de bytes dans le message | 49 |
 | 1 | 0x08 | Adresse de destination | Satellite=0x08 |
 | 2 | 0x80 | Adresse de source | Chaudière=0x80 |
 | 3 | 0x6E | Request Id | Échange chaudière/Satellite (valeur définie lors de la phase d'association) |

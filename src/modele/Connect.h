@@ -11,6 +11,7 @@ public:
     }
     byte getId() const { return idConnect; }
     void setId(byte id) { idConnect = id; }
+    bool isConnectAssocie() const { return idConnect != 0; }
 private:
     Connect() : idConnect(0) {} // Constructeur privé, id par défaut à 0
     Connect(const Connect&) = delete;

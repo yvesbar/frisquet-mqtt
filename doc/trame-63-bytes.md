@@ -84,7 +84,6 @@ C'est une trame de réponse à une demande du frisquet connect sur l'état des t
 - Les index sont 0-based (le premier octet de la trame est à l'index 0).
 - Les valeurs sont généralement exprimées en dixièmes de degré Celsius (ex : 265 → 26,5 °C).
 - Certaines valeurs peuvent être incohérentes (ex : 127,0 °C) si la zone n'est pas active ou non câblée.
-- La méthode utilise la fonction `bytesToTemperature` pour la conversion.
 
 ### Exemple de trame décodée
 

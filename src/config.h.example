@@ -28,6 +28,7 @@ static const bool TEMP_EXTERIEUR_PHYSIQUE_ACTIF = true;
 //FIXME A implémenter
 static const bool TEMP_EXTERIEUR_EMULE_ACTIF = true;
 
+static const bool AFFICHAGE_ON = false; // Affichage OLED actif (true) ou non (false)
 
 
 #endif // CONFIG_H

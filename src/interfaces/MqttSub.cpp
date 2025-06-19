@@ -16,6 +16,10 @@ void MqttSub::init(PubSubClient* client) {
 
 
     client->subscribe((MqttSub::getDemandeAssociationConnectCommandTopic() + "/#").c_str()); // Exemple d'abonnement
+    // Souscription aux changements de mode des 3 zones
+    client->subscribe(MqttPub::getZoneModeCommandTopic(ZONE1_NOM).c_str());
+    client->subscribe(MqttPub::getZoneModeCommandTopic(ZONE2_NOM).c_str());
+    client->subscribe(MqttPub::getZoneModeCommandTopic(ZONE3_NOM).c_str());
 }
 
 void MqttSub::loop() {
@@ -36,14 +40,45 @@ void MqttSub::callback(char* topic, byte* payload, unsigned int length) {
     }
     Serial.println();
 
-    //TODO A tester 
     if (MqttSub::getDemandeAssociationConnectCommandTopic().equals(topic)) {
         // Traiter le message spécifique à l'association Frisquet Connect
         VisioConnectPub::getInstance()->associerFrisquetConnect();
 
         //Remet l'interrupteur à 0
         client->publish(MqttSub::getDemandeAssociationConnectStateTopic().c_str(), "0");
+    }
 
+
+    // Vérifie si le topic correspond à un changement de mode d'une zone
+    String zoneNames[3] = {ZONE1_NOM, ZONE2_NOM, ZONE3_NOM};
+    byte zoneIds[3] = {Zone::ZONE1_ID, Zone::ZONE2_ID, Zone::ZONE3_ID};
+    for (int i = 0; i < 3; ++i) {
+        if (MqttPub::getZoneModeCommandTopic(zoneNames[i]).equals(topic)) {
+            // Trouve la zone concernée
+            Zone* zone = Chaudiere::getInstance().getZoneById(zoneIds[i]);
+        
+            if (zone) {
+                // Met à jour le mode de la zone en fonction du payload
+                switch (payload[0]) { // Utiliser le premier caractère pour optimiser
+                    case 'A': // "Auto"
+                        zone->setMode(Zone::AUTO);
+                        break;
+                    case 'C': // "Confort"
+                        zone->setMode(Zone::CONFORT);
+                        break;
+                    case 'R': // "Réduit"
+                        zone->setMode(Zone::REDUIT);
+                        break;
+                    case 'H': // "Hors gel"
+                        zone->setMode(Zone::HORS_GEL);
+                        break;
+                }
+
+                // Demande à VisioConnectPub de publier les nouvelles valeurs de la zone
+                VisioConnectPub::getInstance()->envoyerZone(zone);
+            }
+            break;
+        }
     }
 }
 

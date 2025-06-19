@@ -32,12 +32,14 @@ void ModuleHeltec::initAffichage() {
     DEBUGLN(F("ModuleHeltec - +initAffichage"));
 
     // Initialisation de l'écran OLED
-    Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
-    Heltec.display->init();
-    Heltec.display->setFont(ArialMT_Plain_10);
-    Heltec.display->clear();
-    Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
-    Heltec.display->display();
+    Heltec.begin(AFFICHAGE_ON /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
+    if (AFFICHAGE_ON) { 
+        Heltec.display->init();
+        Heltec.display->setFont(ArialMT_Plain_10);
+        Heltec.display->clear();
+        Heltec.display->drawXbm(0, 0, 128, 64, myLogo);
+        Heltec.display->display();
+    }
 
     DEBUGLN(F("ModuleHeltec - -initAffichage"));
 }
@@ -46,15 +48,13 @@ void ModuleHeltec::initAffichage() {
  * Affiche un message sur l'écran OLED
  */
 void ModuleHeltec::affiche(const String& message) {
-    DEBUGLN(F("ModuleHeltec - +affiche"));
-
-    Heltec.display->clear();
-    Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
-    Heltec.display->setFont(ArialMT_Plain_10);
-    Heltec.display->drawString(0, 0, message);
-    Heltec.display->display();
-
-    DEBUGLN(F("ModuleHeltec - -affiche"));
+    if (AFFICHAGE_ON) { 
+        Heltec.display->clear();
+        Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+        Heltec.display->setFont(ArialMT_Plain_10);
+        Heltec.display->drawString(0, 0, message);
+        Heltec.display->display();
+    }
 }
 
 /**
@@ -64,13 +64,13 @@ void ModuleHeltec::initRadio() {
     DEBUGLN(F("ModuleHeltec - +initRadio"));
 
     // Configuration du module radio
-    int state = radio.beginFSK();
-    state = radio.setFrequency(868.96);
-    state = radio.setBitRate(25.0);
-    state = radio.setFrequencyDeviation(50.0);
-    state = radio.setRxBandwidth(250.0);
-    state = radio.setPreambleLength(4);
-    state = radio.setSyncWord(network_id, sizeof(network_id));
+    radio.beginFSK();
+    radio.setFrequency(868.96);
+    radio.setBitRate(25.0);
+    radio.setFrequencyDeviation(50.0);
+    radio.setRxBandwidth(250.0);
+    radio.setPreambleLength(4);
+    radio.setSyncWord(network_id, sizeof(network_id));
 
     DEBUGLN(F("ModuleHeltec - -initRadio"));
 }

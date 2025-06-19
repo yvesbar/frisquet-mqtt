@@ -9,3 +9,8 @@ String Utils::byteArrayToHexString(byte* byteArray, int length) {
     }
     return result;
 }
+
+float Utils::bytesToTemperature(byte highByte, byte lowByte) {
+    int value = (highByte << 8) | lowByte;
+    return value / 10.0;
+}

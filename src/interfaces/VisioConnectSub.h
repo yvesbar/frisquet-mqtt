@@ -30,14 +30,14 @@ class VisioConnectSub {
         void init(); // Public method to initialize the OLED display and radio
         static void setFlag(); // Méthode statique pour indiquer qu'un paquet a été reçu
         void lireTrame(); // Méthode pour lire et traiter une trame reçue
-        static bool receivedFlag; // Drapeau pour indiquer qu'un paquet a été reçu
         void attendreTrame63_79e0(byte numeroMessage); // Méthode pour traiter une trame de 63 à 79 octets
         void attendreTrame63_7a18(byte numeroMessage); // Méthode pour traiter une trame de 63 à 7a octets
         
-    private:
+        private:
         MqttPub* mqttPub;        // Référence à une instance de MqttPub
         byte idAttendu79e0 = 0; // Variable d'instance pour l'ID attendu
         byte idAttendu7a18 = 0; // Variable d'instance pour l'ID attendu trame 7a18
+        static bool receivedFlag; // Drapeau pour indiquer qu'un paquet a été reçu
         
         void lireTrame23(byte* trame); // Méthode pour traiter une trame de 23 octets
         void lireTrame17(byte* trame); // Méthode pour traiter une trame de 17 octets

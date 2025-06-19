@@ -33,6 +33,8 @@ public:
     // Envoie une trame déjà construite
     bool envoyerTrame(byte* trame, size_t tailleTrame = 10);
 
+    bool envoyerZone(Zone* zone);
+
 private:
     VisioConnectPub(); // Constructeur privé pour le singleton
     static VisioConnectPub* instance; // Pointeur vers l'instance unique
@@ -54,6 +56,8 @@ private:
     static int conMsgIndex;
     static int idxMessageAEnvoyer;
     static uint8_t numeroMessage;
+
+    uint8_t getNumeroMessage();
 };
 
 #endif // VISIOCONNECTPUB_H

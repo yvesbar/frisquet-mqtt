@@ -31,7 +31,6 @@ public:
     static void handleOTA();
 
     //gestion de la mémoire flash du module
-    //TODO à gérer mais vu que c'est déjà dans le config.h, je ne sais pas si c'est utile
     static void initNVS();
 
     static void saveIdConnect(byte id);

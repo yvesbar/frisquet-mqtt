@@ -128,7 +128,7 @@ RECEIVED [14] : 80 08 1A 04 82 41 03 23 12 06 01 27 00 02 ==>réponse du satelli
 
 # Association du Frisquet Connect émulée
 
-1. Sur la chaudière, accédez au menu de configuration et lancez l'association Frisquet Connect.
+1. Sur la chaudière, accédez au menu de configuration, aller dans "partenaire", "Ajouter",  et lancez l'association Frisquet Connect.
 2. Appuyez sur OK jusqu’à ce que l’écran demande d’associer la Frisquet Connect.
 3. Dans Home Assistant, activez l’interrupteur mentionnant « ass. connect ».
 4. La chaudière devrait indiquer que la Frisquet Connect est associée, et le bouton « ass. connect » devrait se désactiver automatiquement.

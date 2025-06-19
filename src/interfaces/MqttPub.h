@@ -27,23 +27,36 @@ class MqttPub {
 
         //Permet de déployer la configuration d'auto conf HA
         void deployAutoDiscoveryHA();
+        void deployConfHAZone(Zone* zone);
 
         //Stock un évènement pour le publiqué plus tard
         //void publishAsync(String topic, String value);
 
         //Publication des évènements en attente
         //void publishEvents();
-        void deployConfHAZone(Zone* zone);
         PubSubClient* getClient(); // Ajout de la méthode getClient
-        void publishTempAmbiante(Zone* zone, float temperature); // Publie la température ambiante
-        void publishTempConsigne(Zone* zone, float temperature); // Publie la température de consigne
+
+        void publishZoneTempAmbiante(Zone* zone, float temperature); // Publie la température ambiante
+        void publishZoneTempConsigne(Zone* zone, float temperature); // Publie la température de consigne
+        void publishZoneTempDepart(Zone* zone, float temperature);
+        void publishZoneMode(Zone* zone);
+
         void publishTempExterieure(float temperature); // Publie la température extérieure
         void publishTempECS(float temperature);
         void publishTempCorpsDeChauffe(float temperature);
-        void publishTempDepart(float temperature);
         void publishConsoGazCh(int value);
         void publishConsoGazECS(int value);
-        void publishZoneMode(Zone* zone);
+        
+        static String getZoneTempConsigneTopic(String nomZoneMqtt);
+        static String getZoneTempAmbianteTopic(String nomZoneMqtt);
+        static String getZoneTempExterieurTopic();
+        static String getConsoGazChauffageTopic();
+        static String getConsoGazECSTopic();
+        static String getTempECSTopic();
+        static String getTempCorpsDeChauffeTopic();
+        static String getZoneTempDepartTopic(String nomZoneMqtt);
+        static String getZoneModeStateTopic(String nomZoneMqtt);
+        static String getZoneModeCommandTopic(String nomZoneMqtt);
 
     private:
         static const String MQTT_HA_TOPIC_SENSOR;
@@ -58,15 +71,6 @@ class MqttPub {
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
         void deployConfHASwitchAssociationConnect();
-        String getZoneTempConsigneTopic(String nomZoneMqtt);
-        String getZoneTempAmbianteTopic(String nomZoneMqtt);
-        String getZoneTempExterieurTopic();
-        String getConsoGazChauffageTopic();
-        String getConsoGazECSTopic();
-        String getTempCorpsDeChauffeTopic();
-        String getZoneTempDepartTopic(String nomZoneMqtt);
-        String getZoneModeStateTopic(String nomZoneMqtt);
-        String getZoneModeCommandTopic(String nomZoneMqtt);
 };
 
 #endif  //__MQTT_PUB_H_

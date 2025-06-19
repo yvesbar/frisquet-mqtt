@@ -30,7 +30,7 @@ class Chaudiere {
         //TODO ajouter l'identifiant réseau
 
         static constexpr uint8_t idConnect = 0x7E;
-        bool isEcsActive() const { return ECS_ACTIF; }
+        bool isEcsActif() const { return ECS_ACTIF; }
 
     private:
         Chaudiere(); // Constructeur privé pour le singleton
