@@ -64,9 +64,10 @@ class MqttPub {
         
         PubSubClient* client;
         bool configHADeployed = false;
-
+        unsigned long lastZonesPublish = 0; // Timestamp dernière publication horaire
+        void publishAllZones(); // Publication de toutes les zones connues
         //TODO a utiliser plus tard quand on utilisera les 2 coeurs du heltec
-        TSQueue<MqttPublishEvent>* mqttPublishQueue;
+        //TSQueue<MqttPublishEvent>* mqttPublishQueue;
 
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
