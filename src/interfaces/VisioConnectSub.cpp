@@ -231,82 +231,82 @@ void VisioConnectSub::lireTrame63(byte* trame) {
  */
 void VisioConnectSub::decodeTrame63_infosCapteurs(byte* trame) {
     DEBUGLN("VisioConnectSub - +decodeTrame63_infosCapteurs");
-    int decimalValue;
+    float temperatureValue;
     Zone* zone;
 
     // Extraction de la température de l'ECS (Eau Chaude Sanitaire)
     if (Chaudiere::getInstance().isEcsActif()) {
-        decimalValue = Utils::bytesToTemperature(trame[7], trame[8]);
+        temperatureValue = Utils::bytesToTemperature(trame[7], trame[8]);
         DEBUG(F("ECS : "));
-        DEBUGLN(decimalValue);
-        if (decimalValue != Chaudiere::getInstance().getTempECS()) {
-            Chaudiere::getInstance().setTempECS(decimalValue);
-            mqttPub->publishTempECS(decimalValue);
+        DEBUGLN(temperatureValue);
+        if (temperatureValue != Chaudiere::getInstance().getTempECS()) {
+            Chaudiere::getInstance().setTempECS(temperatureValue);
+            mqttPub->publishTempECS(temperatureValue);
         }
     }
 
     // Extraction de la température du corps de chauffe
-    decimalValue = Utils::bytesToTemperature(trame[9], trame[10]);
-    if (decimalValue != Chaudiere::getInstance().getTempCorpsDeChauffe()) {
-        Chaudiere::getInstance().setTempCorpsDeChauffe(decimalValue);
-        mqttPub->publishTempCorpsDeChauffe(decimalValue);
+    temperatureValue = Utils::bytesToTemperature(trame[9], trame[10]);
+    if (temperatureValue != Chaudiere::getInstance().getTempCorpsDeChauffe()) {
+        Chaudiere::getInstance().setTempCorpsDeChauffe(temperatureValue);
+        mqttPub->publishTempCorpsDeChauffe(temperatureValue);
     }
 
     // Zone 1
     zone = getZone(Zone::ZONE1_ID);
-    decimalValue = Utils::bytesToTemperature(trame[11], trame[12]);
-    if (zone->getTempDepart() != decimalValue) {
-        zone->setTempDepart(decimalValue);
-        this->mqttPub->publishZoneTempDepart(zone, decimalValue);
+    temperatureValue = Utils::bytesToTemperature(trame[11], trame[12]);
+    if (zone->getTempDepart() != temperatureValue) {
+        zone->setTempDepart(temperatureValue);
+        this->mqttPub->publishZoneTempDepart(zone, temperatureValue);
     }
-    decimalValue = Utils::bytesToTemperature(trame[43], trame[44]);
-    if (zone->getTempAmbiance() != decimalValue) {
-        zone->setTempAmbiance(decimalValue);
-        this->mqttPub->publishZoneTempAmbiante(zone, decimalValue);
+    temperatureValue = Utils::bytesToTemperature(trame[43], trame[44]);
+    if (zone->getTempAmbiance() != temperatureValue) {
+        zone->setTempAmbiance(temperatureValue);
+        this->mqttPub->publishZoneTempAmbiante(zone, temperatureValue);
     }
-    decimalValue = Utils::bytesToTemperature(trame[55], trame[56]);
-    if (zone->getTempConsigne() != decimalValue) {
-        zone->setTempConsigne(decimalValue);
-        this->mqttPub->publishZoneTempConsigne(zone, decimalValue);
+    temperatureValue = Utils::bytesToTemperature(trame[55], trame[56]);
+    if (zone->getTempConsigne() != temperatureValue) {
+        zone->setTempConsigne(temperatureValue);
+        this->mqttPub->publishZoneTempConsigne(zone, temperatureValue);
     }
 
     // Zone 2
     if (Utils::bytesToTemperature(trame[45], trame[46]) != 127.0) {
         zone = getZone(Zone::ZONE2_ID);
-        decimalValue = Utils::bytesToTemperature(trame[13], trame[14]);
-        if (zone->getTempDepart() != decimalValue) {
-            zone->setTempDepart(decimalValue);
-            this->mqttPub->publishZoneTempDepart(zone, decimalValue);
+        temperatureValue = Utils::bytesToTemperature(trame[13], trame[14]);
+        if (zone->getTempDepart() != temperatureValue) {
+            zone->setTempDepart(temperatureValue);
+            this->mqttPub->publishZoneTempDepart(zone, temperatureValue);
         }
-        decimalValue = Utils::bytesToTemperature(trame[45], trame[46]);
-        if (zone->getTempAmbiance() != decimalValue) {
-            zone->setTempAmbiance(decimalValue);
-            this->mqttPub->publishZoneTempAmbiante(zone, decimalValue);
+        temperatureValue = Utils::bytesToTemperature(trame[45], trame[46]);
+        if (zone->getTempAmbiance() != temperatureValue) {
+            zone->setTempAmbiance(temperatureValue);
+            this->mqttPub->publishZoneTempAmbiante(zone, temperatureValue);
         }
-        decimalValue = Utils::bytesToTemperature(trame[57], trame[58]);
-        if (zone->getTempConsigne() != decimalValue) {
-            zone->setTempConsigne(decimalValue);
-            this->mqttPub->publishZoneTempConsigne(zone, decimalValue);
+        temperatureValue = Utils::bytesToTemperature(trame[57], trame[58]);
+        if (zone->getTempConsigne() != temperatureValue) {
+            zone->setTempConsigne(temperatureValue);
+            this->mqttPub->publishZoneTempConsigne(zone, temperatureValue);
         }
     }
 
     // Zone 3
     if (Utils::bytesToTemperature(trame[47], trame[48]) != 127.0) {
-        zone = getZone(Zone::ZONE2_ID);
-        decimalValue = Utils::bytesToTemperature(trame[15], trame[16]);
-        if (zone->getTempDepart() != decimalValue) {
-            zone->setTempDepart(decimalValue);
-            this->mqttPub->publishZoneTempDepart(zone, decimalValue);
+        zone = getZone(Zone::ZONE3_ID); // Correction probable: utilisation de la zone 3
+        temperatureValue = Utils::bytesToTemperature(trame[15], trame[16]);
+        if (zone->getTempDepart() != temperatureValue) {
+            zone->setTempDepart(temperatureValue);
+            this->mqttPub->publishZoneTempDepart(zone, temperatureValue);
         }
-        decimalValue = Utils::bytesToTemperature(trame[47], trame[48]);
-        if (zone->getTempAmbiance() != decimalValue) {
-            zone->setTempAmbiance(decimalValue);
-            this->mqttPub->publishZoneTempAmbiante(zone, decimalValue);
+        temperatureValue = Utils::bytesToTemperature(trame[47], trame[48]);
+        if (zone->getTempAmbiance() != temperatureValue) {
+            zone->setTempAmbiance(temperatureValue);
+            this->mqttPub->publishZoneTempAmbiante(zone, temperatureValue);
         }
-        decimalValue = Utils::bytesToTemperature(trame[59], trame[60]);
-        if (zone->getTempConsigne() != decimalValue) {
-            zone->setTempConsigne(decimalValue);
-            this->mqttPub->publishZoneTempConsigne(zone, decimalValue);
+        temperatureValue = Utils::bytesToTemperature(trame[59], trame[60]);
+        if (zone->getTempConsigne() != temperatureValue) {
+            zone->setTempConsigne(temperatureValue);
+            this->mqttPub->publishZoneTempConsigne(zone, temperatureValue);
         }
     }
 

@@ -46,10 +46,7 @@ Zone* Chaudiere::getZoneById(byte id) {
 }
 
 void Chaudiere::setTempExterieure(float value) {
-    //Evite la trame de 11h qui set la température extérieure à 0.0 (origine inconnue)
-    if (value != 0.0 || abs(value - tempExterieure) < 0.5) {
-        tempExterieure = value;
-    }
+    tempExterieure = value;
 }
 
 void Chaudiere::setTempCorpsDeChauffe(float value) {
