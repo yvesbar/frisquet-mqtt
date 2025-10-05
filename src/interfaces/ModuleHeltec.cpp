@@ -11,6 +11,19 @@ Preferences ModuleHeltec::preferences; // Définition de la référence statique
 void ModuleHeltec::initWifi(const char* ssid, const char* password) {
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("ESP32Frisquet");
+    if (WIFI_IP_STATIQUE_ACTIVE) {
+        IPAddress ip(WIFI_IP[0], WIFI_IP[1], WIFI_IP[2], WIFI_IP[3]);
+        IPAddress gateway(WIFI_GATEWAY[0], WIFI_GATEWAY[1], WIFI_GATEWAY[2], WIFI_GATEWAY[3]);
+        IPAddress subnet(WIFI_SUBNET[0], WIFI_SUBNET[1], WIFI_SUBNET[2], WIFI_SUBNET[3]);
+        IPAddress dns1(WIFI_DNS1[0], WIFI_DNS1[1], WIFI_DNS1[2], WIFI_DNS1[3]);
+        if (!WiFi.config(ip, gateway, subnet, dns1)) {
+            DEBUGLN(F("INIT - Echec config IP statique (WiFi.config)"));
+        } else {
+            DEBUGLN(F("INIT - IP statique configurée"));
+        }
+    } else {
+        DEBUGLN(F("INIT - Mode DHCP"));
+    }
     WiFi.begin(ssid, password);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.println("Connection Failed! Rebooting...");
@@ -21,8 +34,11 @@ void ModuleHeltec::initWifi(const char* ssid, const char* password) {
 
     DEBUG(F("INIT - Adresse IP : "));
     DEBUGLN(WiFi.localIP());
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+
+    // Affichage de l'adresse MAC
+    String mac = WiFi.macAddress();
+    DEBUG(F("INIT - Adresse MAC : "));
+    DEBUGLN(mac);
 }
 
 /**
