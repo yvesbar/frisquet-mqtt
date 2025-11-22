@@ -84,8 +84,8 @@ void ModuleHeltec::initRadio() {
     radio.setFrequency(868.96);
     radio.setBitRate(25.0);
     radio.setFrequencyDeviation(50.0);
-    radio.setRxBandwidth(250.0);
-    radio.setPreambleLength(4);
+    radio.setRxBandwidth(125.0);  // Réduit de 250 à 125 pour moins de bruit  
+    radio.setPreambleLength(8);     // Augmenté de 4 à 8 pour meilleure sync
     radio.setSyncWord(network_id, sizeof(network_id));
 
     DEBUGLN(F("ModuleHeltec - -initRadio"));

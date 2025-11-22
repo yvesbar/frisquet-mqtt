@@ -201,6 +201,9 @@ bool VisioConnectPub::envoyerTrame(byte* trame, size_t tailleTrame) {
     // Utilise la radio pour envoyer la trame telle quelle
     int state = ModuleHeltec::radio.transmit(trame, tailleTrame);
     
+    // Petit délai pour éviter les collisions
+    delay(10);
+    
     //Remet le module en mode réception
     ModuleHeltec::radio.startReceive();
 

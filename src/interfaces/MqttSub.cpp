@@ -40,7 +40,7 @@ void MqttSub::callback(char* topic, byte* payload, unsigned int length) {
     }
     Serial.println();
 
-    if (MqttSub::getDemandeAssociationConnectCommandTopic().equals(topic)) {
+    if (strcmp(topic, MqttSub::getDemandeAssociationConnectCommandTopic().c_str()) == 0) {
         // Traiter le message spécifique à l'association Frisquet Connect
         VisioConnectPub::getInstance()->associerFrisquetConnect();
 
@@ -53,12 +53,13 @@ void MqttSub::callback(char* topic, byte* payload, unsigned int length) {
     String zoneNames[3] = {ZONE1_NOM, ZONE2_NOM, ZONE3_NOM};
     byte zoneIds[3] = {Zone::ZONE1_ID, Zone::ZONE2_ID, Zone::ZONE3_ID};
     for (int i = 0; i < 3; ++i) {
-        if (MqttPub::getZoneModeCommandTopic(zoneNames[i]).equals(topic)) {
+        if (strcmp(topic, MqttPub::getZoneModeCommandTopic(zoneNames[i]).c_str()) == 0) {
             // Trouve la zone concernée
             Zone* zone = Chaudiere::getInstance().getZoneById(zoneIds[i]);
         
             if (zone) {
                 // Met à jour le mode de la zone en fonction du payload
+                bool modeValid = true;
                 switch (payload[0]) { // Utiliser le premier caractère pour optimiser
                     case 'A': // "Auto"
                         zone->setMode(Zone::AUTO);
@@ -72,10 +73,16 @@ void MqttSub::callback(char* topic, byte* payload, unsigned int length) {
                     case 'H': // "Hors gel"
                         zone->setMode(Zone::HORS_GEL);
                         break;
+                    default:
+                        modeValid = false;
+                        Serial.println("Mode non reconnu !");
+                        break;
                 }
 
-                // Demande à VisioConnectPub de publier les nouvelles valeurs de la zone
-                VisioConnectPub::getInstance()->envoyerZone(zone);
+                // Demande à VisioConnectPub de publier les nouvelles valeurs de la zone seulement si le mode est valide
+                if (modeValid) {
+                    VisioConnectPub::getInstance()->envoyerZone(zone);
+                }
             }
             break;
         }

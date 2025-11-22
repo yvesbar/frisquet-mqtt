@@ -47,6 +47,14 @@ void VisioConnectSub::lireTrame() {
         int state = ModuleHeltec::radio.readData(byteArr, 0);
         if (state == RADIOLIB_ERR_NONE) {
             int len = ModuleHeltec::radio.getPacketLength();
+            
+            // Filtrer nos propres transmissions (échos)
+            // Nos trames commencent par 0x80 0x7E (vers chaudière depuis connect émulé)
+            if (len >= 2 && byteArr[0] == 0x80 && byteArr[1] == 0x7E) {
+                // Ignorer nos propres trames pour éviter les collisions
+                return;
+            }
+            
             #ifdef DEBUG_ON
                 if (len > 0) {
                     Serial.printf("RECEIVED [%2d] : ", len);

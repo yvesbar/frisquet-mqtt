@@ -307,44 +307,84 @@ PubSubClient* MqttPub::getClient() {
     return client;
 }
 
-void MqttPub::publishZoneTempAmbiante(Zone* zone, float temperature) {
+// Helper centralisé pour formater les floats avec 1 décimale
+MqttPub::TopicState* MqttPub::getOrCreateTopicState(const String& topic) {
+    for (uint8_t i = 0; i < topicStateCount; ++i) {
+        if (topicStates[i].topic == topic) {
+            return &topicStates[i];
+        }
+    }
+    if (topicStateCount < MAX_TOPIC_STATES) {
+        topicStates[topicStateCount].topic = topic;
+        topicStates[topicStateCount].initialized = false;
+        return &topicStates[topicStateCount++];
+    }
+    return nullptr; // Plus de place, on désactive le filtrage pour ce topic
+}
+
+bool MqttPub::shouldPublishFiltered(TopicState* state, float newValue) {
+    unsigned long now = millis();
+    if (state == nullptr) return true; // Pas de suivi => on publie
+    if (!state->initialized) return true; // Première valeur => on publie
+
+    float delta = fabs(newValue - state->lastValue);
+    if (delta >= antiSpamSeuil) {
+        return true; // Variation suffisante
+    }
+    // Variation faible, on ne republie que si assez de temps écoulé
+    if (now - state->lastTs >= antiSpamMinIntervalMs) {
+        return true;
+    }
+    return false;
+}
+
+void MqttPub::publishFloat(const String& topic, float value, uint8_t decimals, bool retain, bool filter) {
+    TopicState* state = nullptr;
+    if (filter) {
+        state = getOrCreateTopicState(topic);
+        if (!shouldPublishFiltered(state, value)) {
+            return; // filtré
+        }
+    }
+    char payload[12];
+    dtostrf(value, 0, decimals, payload);
+    if (client->publish(topic.c_str(), payload, retain) && state != nullptr) {
+        state->lastValue = value;
+        state->lastTs = millis();
+        state->initialized = true;
+    } else if (state != nullptr && !state->initialized) {
+        // Même si publish échoue, on n'initialise pas pour réessayer la prochaine fois
+    }
+}
+
+void MqttPub::publishZoneTempAmbiante(Zone* zone, float temperature, bool force) {
     String topic = getZoneTempAmbianteTopic(zone->getNom());
-    String value = String(temperature, 1); // Converti la température en chaîne avec 1 décimale
-    client->publish(topic.c_str(), value.c_str(), true);
+    publishFloat(topic, temperature, 1, true, !force);
 }
 
-void MqttPub::publishZoneTempConsigne(Zone* zone, float temperature) {
+void MqttPub::publishZoneTempConsigne(Zone* zone, float temperature, bool force) {
     String topic = getZoneTempConsigneTopic(zone->getNom());
-    String value = String(temperature, 1); // Converti la température en chaîne avec 1 décimale
-    client->publish(topic.c_str(), value.c_str(), true);
+    publishFloat(topic, temperature, 1, true, !force);
 }
 
-void MqttPub::publishZoneTempDepart(Zone* zone, float temperature) {
+void MqttPub::publishZoneTempDepart(Zone* zone, float temperature, bool force) {
     String topic = getZoneTempDepartTopic(zone->getNom());
-    String value = String(temperature, 1); // Converti la température en chaîne avec 1 décimale
-    client->publish(topic.c_str(), value.c_str(), true);
+    publishFloat(topic, temperature, 1, true, !force);
 }
 
 void MqttPub::publishTempExterieure(float temperature) {
     if (temperature < 0 || temperature >= 0.1) {
         String topic = getZoneTempExterieurTopic();
-        String value = String(temperature, 1); // Converti la température en chaîne avec 1 décimale
-        client->publish(topic.c_str(), value.c_str(), true);
+        publishFloat(topic, temperature, 1, true, true);
     }
 }
 
 void MqttPub::publishTempECS(float temperature) {
-    String topic = getTempECSTopic();
-    char payload[10];
-    snprintf(payload, sizeof(payload), "%.1f", temperature);
-    client->publish(topic.c_str(), payload, true);
+    publishFloat(getTempECSTopic(), temperature, 1, true, true);
 }
 
 void MqttPub::publishTempCorpsDeChauffe(float temperature) {
-    String topic = getTempCorpsDeChauffeTopic();
-    char payload[10];
-    snprintf(payload, sizeof(payload), "%.1f", temperature);
-    client->publish(topic.c_str(), payload, true);
+    publishFloat(getTempCorpsDeChauffeTopic(), temperature, 1, true, true);
 }
 
 void MqttPub::publishConsoGazCh(int value) {
@@ -356,7 +396,7 @@ void MqttPub::publishConsoGazCh(int value) {
 void MqttPub::publishConsoGazECS(int value) {
     char payload[10];
     snprintf(payload, sizeof(payload), "%d", value);
-    client->publish(getConsoGazECSTopic().c_str(), payload), true;
+    client->publish(getConsoGazECSTopic().c_str(), payload, true);
 }
 
 
@@ -397,9 +437,9 @@ void MqttPub::publishAllZones() {
     for (int i = 0; i < 3; ++i) {
         Zone* zone = zones[i];
         if (zone != nullptr) {
-            publishZoneTempAmbiante(zone, zone->getTempAmbiance());
-            publishZoneTempConsigne(zone, zone->getTempConsigne());
-            publishZoneTempDepart(zone, zone->getTempDepart());
+            publishZoneTempAmbiante(zone, zone->getTempAmbiance(), true); // force pour publication horaire
+            publishZoneTempConsigne(zone, zone->getTempConsigne(), true);
+            publishZoneTempDepart(zone, zone->getTempDepart(), true);
             publishZoneMode(zone);
         }
     }

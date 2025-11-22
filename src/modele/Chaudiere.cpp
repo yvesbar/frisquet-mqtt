@@ -37,12 +37,8 @@ Zone* Chaudiere::addZone(byte id) {
 }
 
 Zone* Chaudiere::getZoneById(byte id) {
-    if (zones.find(id) == zones.end()) {
-        DEBUG(F("Chaudiere - Création d'une nouvelle zone avec l'ID : "));
-        DEBUGLN(id);
-        // TODO ???
-    }
-    return zones[id]; // Retourne la zone existante ou nouvellement créée
+    //Les zones sont créées dynamiquement à la première réception d'une trame les concernant
+    return zones[id]; 
 }
 
 void Chaudiere::setTempExterieure(float value) {

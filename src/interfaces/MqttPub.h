@@ -36,9 +36,9 @@ class MqttPub {
         //void publishEvents();
         PubSubClient* getClient(); // Ajout de la méthode getClient
 
-        void publishZoneTempAmbiante(Zone* zone, float temperature); // Publie la température ambiante
-        void publishZoneTempConsigne(Zone* zone, float temperature); // Publie la température de consigne
-        void publishZoneTempDepart(Zone* zone, float temperature);
+        void publishZoneTempAmbiante(Zone* zone, float temperature, bool force = false); // Publie la température ambiante
+        void publishZoneTempConsigne(Zone* zone, float temperature, bool force = false); // Publie la température de consigne
+        void publishZoneTempDepart(Zone* zone, float temperature, bool force = false);
         void publishZoneMode(Zone* zone);
 
         void publishTempExterieure(float temperature); // Publie la température extérieure
@@ -72,6 +72,32 @@ class MqttPub {
         void deployConfHAChaudiere();
         void deployConfHAtempExt();
         void deployConfHASwitchAssociationConnect();
+
+        // Helper uniforme pour publier un float avec 1 décimale
+        void publishFloat(const String& topic, float value, uint8_t decimals = 1, bool retain = true, bool filter = true);
+
+        // --- Anti-spam ---
+        struct TopicState {
+            String topic;
+            float lastValue = 0.0f;
+            unsigned long lastTs = 0; // millis du dernier publish
+            bool initialized = false;
+        };
+        static const uint8_t MAX_TOPIC_STATES = 16;
+        TopicState topicStates[MAX_TOPIC_STATES];
+        uint8_t topicStateCount = 0;
+        float antiSpamSeuil = 0.05f;              // Variation minimale (ex: 0.05 => 0.1°C suffira)
+        unsigned long antiSpamMinIntervalMs = 60000UL; // 60s entre deux publications si variation faible
+
+        TopicState* getOrCreateTopicState(const String& topic);
+        bool shouldPublishFiltered(TopicState* state, float newValue);
+
+    public:
+        // Permet d'ajuster dynamiquement le filtre anti-spam (threshold en °C, intervalle ms)
+        void setAntiSpamParameters(float threshold, unsigned long minIntervalMs) {
+            antiSpamSeuil = threshold;
+            antiSpamMinIntervalMs = minIntervalMs;
+        }
 };
 
 #endif  //__MQTT_PUB_H_
