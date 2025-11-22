@@ -47,14 +47,6 @@ void VisioConnectSub::lireTrame() {
         int state = ModuleHeltec::radio.readData(byteArr, 0);
         if (state == RADIOLIB_ERR_NONE) {
             int len = ModuleHeltec::radio.getPacketLength();
-            
-            // Filtrer nos propres transmissions (échos)
-            // Nos trames commencent par 0x80 0x7E (vers chaudière depuis connect émulé)
-            if (len >= 2 && byteArr[0] == 0x80 && byteArr[1] == 0x7E) {
-                // Ignorer nos propres trames pour éviter les collisions
-                return;
-            }
-            
             #ifdef DEBUG_ON
                 if (len > 0) {
                     Serial.printf("RECEIVED [%2d] : ", len);
@@ -279,7 +271,7 @@ void VisioConnectSub::decodeTrame63_infosCapteurs(byte* trame) {
     }
 
     // Zone 2
-    if (Utils::bytesToTemperature(trame[45], trame[46]) != 127.0) {
+    if (Utils::bytesToTemperature(trame[45], trame[46]) < 60) {
         zone = getZone(Zone::ZONE2_ID);
         temperatureValue = Utils::bytesToTemperature(trame[13], trame[14]);
         if (zone->getTempDepart() != temperatureValue) {
@@ -299,7 +291,7 @@ void VisioConnectSub::decodeTrame63_infosCapteurs(byte* trame) {
     }
 
     // Zone 3
-    if (Utils::bytesToTemperature(trame[47], trame[48]) != 127.0) {
+    if (Utils::bytesToTemperature(trame[47], trame[48]) < 60) {
         zone = getZone(Zone::ZONE3_ID); // Correction probable: utilisation de la zone 3
         temperatureValue = Utils::bytesToTemperature(trame[15], trame[16]);
         if (zone->getTempDepart() != temperatureValue) {

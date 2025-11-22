@@ -11,6 +11,8 @@ String Utils::byteArrayToHexString(byte* byteArray, int length) {
 }
 
 float Utils::bytesToTemperature(byte highByte, byte lowByte) {
-    int value = (highByte << 8) | lowByte;
-    return value / 10.0;
+    // Combiner les octets puis interpréter en signé (complément à 2) pour gérer les températures négatives
+    uint16_t rawValue = (highByte << 8) | lowByte;
+    int16_t signedValue = static_cast<int16_t>(rawValue);
+    return signedValue / 10.0;
 }
